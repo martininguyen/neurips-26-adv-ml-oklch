@@ -1,0 +1,1 @@
+{"stats": {"Clean": {"acc": 1000}, "Luminance_Grid": {"acc": 132, "lpips": 467.0964919179678, "acc_purified": 258}, "Random_RGB": {"acc": 520, "lpips": 467.40304890275, "eps": 183.9013671875, "acc_purified": 821}, "Random_L": {"acc": 665, "lpips": 466.96668258309364, "eps": 114.8779296875, "acc_purified": 806}}, "valid_count": 1000, "last_idx": 999}

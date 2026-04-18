@@ -1,0 +1,10 @@
+{
+    "Liu2023_ConvNeXt-L": {
+        "Natural": 0.486,
+        "Grid": 0.566
+    },
+    "Xu2024_Swin-L": {
+        "Natural": 0.448,
+        "Grid": 0.53
+    }
+}

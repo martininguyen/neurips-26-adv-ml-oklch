@@ -1,0 +1,73 @@
+{
+    "dataset": {
+        "num_test_images": 1000,
+        "batch_size": 20
+    },
+    "transferability": {
+        "surrogate_model": "resnet50",
+        "target_models": [
+            "alexnet",
+            "vgg16",
+            "mobilenet_v3_large",
+            "efficientnet_b0",
+            "vit_b_16"
+        ]
+    },
+    "robust_models": {
+        "surrogate_model": "resnet50",
+        "target_model": "wide_resnet50_2"
+    },
+    "autoattack": {
+        "eps_rgb": 0.01568627,
+        "eps_oklch_c": 0.005,
+        "eps_oklch_l": 0.005,
+        "target_models": [
+            "Liu2023Comprehensive_ConvNeXt-L",
+            "Xu2024MIMIR_Swin-L"
+        ]
+    },
+    "full_benchmark": {
+        "target_models": [
+            "resnet50",
+            "Salman2020Do_R50",
+            "Salman2020Do_50_2"
+        ]
+    },
+    "ablation": {
+        "pgd_eps": 8.0,
+        "pgd_steps": 20,
+        "target_models": [
+            "resnet50",
+            "vit_b_16",
+            "vgg16",
+            "densenet121",
+            "efficientnet_b0"
+        ]
+    },
+    "purification": {
+        "sd35_vae_model_id": "stabilityai/stable-diffusion-3.5-medium",
+        "sd15_vae_model_id": "stabilityai/sd-vae-ft-mse",
+        "patch_size": 32
+    },
+    "evaluation": {
+        "lpips_backbone": "alex",
+        "target_model": "Salman2020Do_50_2",
+        "target_model_short": "WideResNet50",
+        "step_options": [
+            1,
+            4,
+            8,
+            12,
+            16,
+            24,
+            32
+        ]
+    },
+    "ThreatMappings": {
+        "eps_rgb": 0.031372549,
+        "eps_autoattack_rgb": 0.01568627,
+        "eps_oklch_l": 0.01,
+        "eps_oklch_c": 0.01,
+        "eps_structural": 0.2
+    }
+}

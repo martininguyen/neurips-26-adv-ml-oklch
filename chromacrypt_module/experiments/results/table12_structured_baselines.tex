@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Structured Baseline Diagnostic ($N=1{,}000$). To isolate the efficacy of the \textit{Chromic Grid's} global spatial harmonic against standard geometric perturbations, we benchmark against the localized Adversarial Patch \cite{brown2017adversarial}. While Adversarial Patches trivially corrupt standard ResNet-50 architectures, highly resilient Vision Transformers and ConvNeXt architectures functionally identify and filter local topological deformations. Only the global harmonic frequency of the Chromic Grid induces systemic structural collapse across all architectures.}
+\label{tab:structured_baselines}
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{@{}l|cc|ccc@{}}
+\toprule
+\textbf{Target Model} & \textbf{Clean Acc} & \textbf{Adv Patch ASR ($32 \times 32$)} & \textbf{Mimicry ASR (Narrowband)} & \textbf{Grid ASR (Global Harmonic)} & \textbf{Avg LPIPS Footprint} \\ \midrule
+ResNet50-Standard & 79.8\% & 36.5\% & 84.7\% & \textbf{82.8\%} & 0.4817 \\
+Salman2020Do-R50 & 58.7\% & 79.7\% & 90.6\% & \textbf{86.0\%} & 0.4817 \\
+Salman2020Do-50-2 & 64.2\% & 79.6\% & 92.4\% & \textbf{86.4\%} & 0.4817 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

@@ -1,0 +1,1 @@
+{"num_test_total": 1000, "total_images": 659, "total_clean_correct": 659, "pgd_pre": 371, "pgd_post": 165, "grid_pre": 204, "grid_post": 440, "nat_pre": 210, "nat_post": 372, "pgd_rescued": 222, "pgd_hallucinated": 16, "grid_rescued": 22, "grid_hallucinated": 258, "nat_rescued": 33, "nat_hallucinated": 195, "next_offset": 1000}

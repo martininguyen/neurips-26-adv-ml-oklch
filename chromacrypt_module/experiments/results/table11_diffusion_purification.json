@@ -1,0 +1,24 @@
+{
+    "metadata": {
+        "N": 1000
+    },
+    "total_images": 798,
+    "patch": {
+        "pre_success": 283,
+        "post_success": 113,
+        "rescued": 189,
+        "hallucinated": 19
+    },
+    "grid": {
+        "pre_success": 661,
+        "post_success": 691,
+        "rescued": 30,
+        "hallucinated": 60
+    },
+    "natural": {
+        "pre_success": 665,
+        "post_success": 680,
+        "rescued": 37,
+        "hallucinated": 52
+    }
+}

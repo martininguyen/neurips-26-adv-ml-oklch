@@ -1,0 +1,8 @@
+{
+    "Narrowband_ASR": 94.5,
+    "Narrowband_LPIPS": 0.7002687587738037,
+    "LuminanceGrid_ASR": 91.2,
+    "LuminanceGrid_LPIPS": 0.4756019973754883,
+    "AdvPatch_ASR": 55.1,
+    "AdvPatch_LPIPS": 0.07000785505771637
+}

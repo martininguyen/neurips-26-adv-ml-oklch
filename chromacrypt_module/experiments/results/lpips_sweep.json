@@ -1,0 +1,22 @@
+{
+    "0.2": {
+        "grid_fail": 79,
+        "rgb_fail": 36,
+        "count": 1000
+    },
+    "0.4": {
+        "grid_fail": 378,
+        "rgb_fail": 79,
+        "count": 1000
+    },
+    "0.6": {
+        "grid_fail": 908,
+        "rgb_fail": 134,
+        "count": 1000
+    },
+    "0.8": {
+        "grid_fail": 999,
+        "rgb_fail": 253,
+        "count": 1000
+    }
+}

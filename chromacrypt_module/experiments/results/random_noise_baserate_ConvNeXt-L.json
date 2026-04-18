@@ -1,0 +1,22 @@
+{
+    "Clean": {
+        "acc": 1.0
+    },
+    "Luminance_Grid": {
+        "acc": 0.413,
+        "lpips": 0.4670964919179678,
+        "acc_purified": 0.462
+    },
+    "Random_RGB": {
+        "acc": 0.904,
+        "lpips": 0.46760127757489683,
+        "eps": 0.183955078125,
+        "acc_purified": 0.888
+    },
+    "Random_L": {
+        "acc": 0.839,
+        "lpips": 0.467389087960124,
+        "eps": 0.11482666015625,
+        "acc_purified": 0.888
+    }
+}

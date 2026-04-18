@@ -1,0 +1,7 @@
+{
+    "RGB-PGD (ms/iter)": 48.31,
+    "OKLCH-PGD (ms/iter)": 65.29,
+    "Slowdown Factor": 1.35,
+    "Device": "cuda",
+    "Peak GPU Memory (MB)": 3023.5
+}

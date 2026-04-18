@@ -1,0 +1,8 @@
+Attack Variant,LPIPS,ResNet50 ASR (%),EfficientNet ASR (%),ViT-B-16 ASR (%),VGG16 ASR (%),Mean ASR (%)
+RGB-PGD Baseline,0.0853,96.0,99.0,100.0,100.0,98.8
+OKLCH ($L+C+H$),0.0073,82.0,99.0,89.0,99.0,92.2
+OKLCH ($L+C$) [Freeze $H$],0.0060,83.0,98.0,87.0,99.0,91.8
+OKLCH ($C+H$) [Freeze $L$],0.0016,64.0,76.0,66.0,94.0,75.0
+OKLCH ($L$) [Freeze $C+H$],0.0048,82.0,99.0,78.0,99.0,89.5
+OKLCH ($C$) [Freeze $L+H$],0.0007,55.0,63.0,53.0,80.0,62.8
+OKLCH ($H$) [Freeze $L+C$],0.0007,45.0,60.0,43.0,63.0,52.8

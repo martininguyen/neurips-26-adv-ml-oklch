@@ -1,0 +1,45 @@
+# Restrict entire repository to essential production folders
+/*
+!chromacrypt_module/
+!whitepaper_v1.5_submissions/
+!.gitignore
+
+# Ignore Virtual Environments and Dependencies
+venv_win/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+
+# Ignore ML Models and massive checkpoint data
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.h5
+*.bin
+
+# Ignore Data arrays and Model structures explicitly
+**/data/
+**/models/
+**/datasets/
+
+# Ignore OS files
+.DS_Store
+._*
+
+# Ignore LaTeX build outputs (Block 122MB uncompressed main.pdf to prevent GitHub 100MB rejection)
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.upa
+*.thm
+*.toc
+*.pdf
+!main_compressed.pdf

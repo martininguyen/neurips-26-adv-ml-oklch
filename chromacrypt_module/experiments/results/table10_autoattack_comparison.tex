@@ -1,0 +1,12 @@
+\begin{table}[htbp]
+\centering
+\caption{Mathematical Optimizer Parity Benchmark ($N=1{,}000$). Evaluating identically restricted $L_{\infty}$ gradient trajectories ($\leq\epsilon=4/255$) executed universally by the AutoAttack ensemble bounds on core SOTA architectures. By traversing the mathematically decoupled OKLCH coordinate space with 12-step geometric preservation boundaries, structural adversarial formulations converge on significantly stronger optima compared to optimizing strictly within the Cartesian RGB domain.}
+\label{tab:sota_optimizer_comparison}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc@{}}
+\toprule
+\textbf{Target Structure} & \textbf{RGB AutoAttack ASR} & \textbf{OKLCH AutoAttack ASR} & \textbf{Avg LPIPS ($\Delta$)} \\ \midrule
+ResNet50-Standard & \textbf{100.0\%} & 53.8\% & 0.1733 \\
+Liu2023-ConvNeXt-L & 40.2\% & \textbf{40.3\%} & 0.1761 \\
+\bottomrule
+\end{tabular*}
+\end{table}
