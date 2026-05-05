@@ -1,38 +1,38 @@
 import os
 import sys
+import gc
+import warnings
+os.environ["HUGGINGFACE_HUB_VERBOSITY"] = "error"
+warnings.simplefilter("ignore")
 os.environ["TORCH_FORCE_WEIGHTS_ONLY_LOAD"] = "0"
 import torch
 import torchvision.models as models
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 import json
-from diffusers import AutoencoderKL
-
 import chromacrypt_module as cc
 from chromacrypt_module import utils as core_utils
+from diffusers import StableDiffusion3Img2ImgPipeline
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-def sd35_autoencoder_purify(img_tensor, vae):
-    """
-    [Logic Block]
-    Operation: SOTA SD3.5 Float16 Purification Network
-    Algebra:
-      1. Casts Tensors -> torch.float16 globally.
-      2. Generates Latent Gaussian Representation: Z = E(X_scaled)
-      3. Output = D(Z) -> float32
-    Purpose: Empties explicit spatial topology mappings by forcing geometric anomalies through SD3.5's extremely resilient VAE spatial bottleneck matrix to test structural survival after extreme continuous memory purification.
-    """
-    if vae is None: return img_tensor # Fallback if SD3.5 disabled
+def sd35_autoencoder_purify(img_tensor, pipeline):
+    if pipeline is None: return img_tensor 
+    print(f"    [Purification] Routing batch of {img_tensor.shape[0]} tensors simultaneously through SD 3.5 VAE...")
+    
+    pil_images = [core_utils.tensor_to_pil(img_tensor[i]) for i in range(img_tensor.shape[0])]
+    
     with torch.no_grad():
-        purified_images = []
-        for i in range(img_tensor.size(0)):
-            # Isolate evaluation to 1 image per pass to prevent VRAM explosion
-            tensor_bf = img_tensor[i:i+1].to(torch.float16)
-            scaled = tensor_bf * 2.0 - 1.0
-            encoded = vae.encode(scaled).latent_dist.sample()
-            output = vae.decode(encoded).sample
-            purified_images.append(((output + 1.0) / 2.0).clamp(0, 1).to(torch.float32))
-        return torch.cat(purified_images, dim=0)
+        # Evaluate batch natively to prevent extreme PCIe bandwidth exhaustion per-image (CPU-to-VRAM swapping bottleneck)
+        purified_images = pipeline(
+            prompt=[""] * len(pil_images), 
+            image=pil_images, 
+            strength=0.35, 
+            guidance_scale=0.0
+        ).images
+        
+    results_tensors = [core_utils.pil_to_tensor(p).to(DEVICE) for p in purified_images]
+    print(f"      -> Batch purification complete.")
+    return torch.stack(results_tensors)
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,19 +55,19 @@ def main():
     surrogate = getattr(models, s_name)(weights="DEFAULT").eval().to(DEVICE)
     target = getattr(models, t_name)(weights="DEFAULT").eval().to(DEVICE)
     
-    vae = None
+    pipeline = None
     try:
         hf_token = os.environ.get("HUGGINGFACE_ACCESS_TOKEN")
-        # Integrating the official community float16 fix to prevent activation overflow
-        vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix", 
+        pipeline = StableDiffusion3Img2ImgPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-3.5-large", 
             torch_dtype=torch.float16,
             token=hf_token
-        ).to(DEVICE)
-        vae.eval()
-        print("Community FP16-Fixed VAE Pipeline Loaded Successfully.")
+        )
+        pipeline.enable_model_cpu_offload()
+        pipeline.set_progress_bar_config(disable=False)
+        print("SD 3.5 Large Flow-Matching Pipeline Loaded Successfully.")
     except Exception as e:
-        print(f"VAE Loading Failed (Skipping Diffusion Purification): {e}")
+        print(f"Pipeline Loading Failed (Skipping Diffusion Purification): {e}")
 
     total_imgs = 0
     wb_wins = 0
@@ -99,9 +99,9 @@ def main():
             bb_wins += (preds_bb != lbl_tensor).float().sum().item()
             
         # Diffusion Purification Resistance 
-        if vae:
-            purified_wb = sd35_autoencoder_purify(adv_wb, vae)
-            purified_bb = sd35_autoencoder_purify(adv_bb, vae)
+        if pipeline:
+            purified_wb = sd35_autoencoder_purify(adv_wb, pipeline)
+            purified_bb = sd35_autoencoder_purify(adv_bb, pipeline)
             
             with torch.no_grad():
                 preds_purified_wb = target((purified_wb - mean) / std).argmax(1)
@@ -110,28 +110,36 @@ def main():
                 preds_purified_bb = target((purified_bb - mean) / std).argmax(1)
                 bb_sd35_wins += (preds_purified_bb != lbl_tensor).float().sum().item()
                 
+                
         total_imgs += curr_batch_size
         print(f"  -> Processed {total_imgs}/{num_images} validation tensors")
+        
+        # Prevent CUDA fragmentation graph buildup scaling into OOM death loops
+        del adv_wb, adv_bb, chromic_atk_wb, chromic_atk_bb
+        if pipeline:
+            del purified_wb, purified_bb
+        gc.collect()
+        torch.cuda.empty_cache()
 
     asr_wb = (wb_wins/total_imgs)*100
     asr_bb = (bb_wins/total_imgs)*100
-    asr_wb_sd35 = (wb_sd35_wins/total_imgs)*100 if vae else 0.0
-    asr_bb_sd35 = (bb_sd35_wins/total_imgs)*100 if vae else 0.0
+    asr_wb_sd35 = (wb_sd35_wins/total_imgs)*100 if pipeline else 0.0
+    asr_bb_sd35 = (bb_sd35_wins/total_imgs)*100 if pipeline else 0.0
 
     print(f"\n--- [Final Validation Matrix] ---")
     print(f"WideResNet50 White-Box ASR: {asr_wb:.1f}%")
     print(f"WideResNet50 Black-Box (Transfer from ResNet50) ASR: {asr_bb:.1f}%")
     
-    if vae:
+    if pipeline:
         print(f"White-Box Post-Purification ASR: {asr_wb_sd35:.1f}%")
         print(f"Black-Box Post-Purification ASR: {asr_bb_sd35:.1f}%")
 
     print("\n" + "="*50)
-    print("LaTeX Table 10 Synthesis Ready (Copy / Paste Below):")
+    print("LaTeX Table [Robust Models] Synthesis Ready (Copy / Paste Below):")
     print("-" * 50)
     print(f"Threat Model & Robust Architecture & Pre-Purification ASR & Post-Purification (SD 3.5) ASR \\\\")
     print(f"\\midrule")
-    if vae:
+    if pipeline:
         print(f"White-Box & {t_name} & {asr_wb:.1f}\\% & \\mathbf{{{asr_wb_sd35:.1f}\\%}} \\\\")
         print(f"Black-Box & {t_name} & {asr_bb:.1f}\\% & \\mathbf{{{asr_bb_sd35:.1f}\\%}} \\\\")
     else:

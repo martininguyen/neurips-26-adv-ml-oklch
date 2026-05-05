@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Diffusion Purification Vulnerability ($N=795$) detailing the dose-response structural endurance (SNR) curve of the Chromic Grid against a ResNet-50 Target Classifier.}
+\label{tab:diffusion_purification}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Attack Generator} & \textbf{Pre-Purification ASR} & \textbf{Post-Purification ASR} & \textbf{Rescued Images $\uparrow$} & \textbf{Induced Misclassifications $\downarrow$} \\ \midrule
+Adversarial Patch ($32\times32$) & 43.3\% & 97.9\% & 3 & 437 \\
+Narrowband Feature Mimicry ($A=0.50$) & 82.1\% & 99.2\% & 2 & 138 \\
+Luminance Grid ($A=0.50$) & 73.6\% & 98.4\% & 6 & 203 \\
+Chromic Grid ($A=0.50$) & 86.8\% & 99.5\% & 1 & 102 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

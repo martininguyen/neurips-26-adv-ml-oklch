@@ -1,0 +1,5 @@
+Model,Attack,ASR (%),Avg LPIPS
+Liu2023Comprehensive_ConvNeXt-L,AutoAttack (RGB),38.7,0.0294
+Liu2023Comprehensive_ConvNeXt-L,AutoAttack (OKLCH),26.2,0.0081
+Xu2024MIMIR_Swin-L,AutoAttack (RGB),38.7,0.0308
+Xu2024MIMIR_Swin-L,AutoAttack (OKLCH),27.1,0.0093

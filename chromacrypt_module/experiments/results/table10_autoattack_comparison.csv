@@ -1,5 +1,0 @@
-Model,Attack,ASR (%),Avg LPIPS
-resnet50,PGD (RGB),100.0,0.0111
-resnet50,PGD (OKLCH),53.8,0.1733
-Liu2023Comprehensive_ConvNeXt-L,PGD (RGB),40.2,0.0195
-Liu2023Comprehensive_ConvNeXt-L,PGD (OKLCH),40.3,0.1761

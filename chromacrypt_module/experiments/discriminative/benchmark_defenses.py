@@ -26,6 +26,7 @@ import torchattacks
 import lpips
 from skimage.restoration import denoise_tv_chambolle
 from diffusers import AutoencoderKL
+from chromacrypt_module.attacks import TopologicalAttractor
 from tqdm import tqdm
 import json
 
@@ -51,7 +52,7 @@ print(f"Using device: {DEVICE}")
 color_ops = cc.DifferentiableColorOps().to(DEVICE)
 
 # Load LPIPS Metric
-loss_fn_lpips = lpips.LPIPS(net="alex").to(DEVICE)
+loss_fn_lpips = lpips.LPIPS(net="vgg").to(DEVICE)
 
 # 1. Load Threat Model (ResNet50)
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
@@ -63,8 +64,15 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 
 
 # 2. Load Defenses
 print("Loading Defenses...")
-# VAE
-vae = AutoencoderKL.from_pretrained("runwayml/stable-diffusion-v1-5", subfolder="vae").to(DEVICE).eval()
+# VAE -> SDE (Diffusion Flow-Matching)
+from diffusers import StableDiffusionImg2ImgPipeline
+pipeline = StableDiffusionImg2ImgPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5", 
+    torch_dtype=torch.float32,
+    safety_checker=None,
+    requires_safety_checker=False
+).to(DEVICE)
+pipeline.set_progress_bar_config(disable=True)
 
 def defend_jpeg(img_tensor, quality=50):
     """JPEG Compression via PIL"""
@@ -83,21 +91,18 @@ def defend_tv(img_tensor, weight=0.1):
     denoised_tensor = torch.from_numpy(denoised_np).permute(2, 0, 1).unsqueeze(0).float()
     return denoised_tensor.to(DEVICE)
 
-def defend_vae(img_tensor):
-    """Autoencoder Purification via SD VAE"""
-    # VAE expects input in [-1, 1]
-    img_vae_in = img_tensor * 2.0 - 1.0
-    with torch.no_grad():
-        latent = vae.encode(img_vae_in).latent_dist.sample()
-        # SD VAE typically uses scaling factor
-        latent = latent * vae.config.scaling_factor
-        
-        # Decode
-        reconstruction = vae.decode(latent / vae.config.scaling_factor).sample
-    
-    # Back to [0, 1]
-    reconstruction = (reconstruction / 2 + 0.5).clamp(0, 1)
-    return reconstruction
+def defend_diffusion(img_tensor):
+    """Autoencoder Purification via SD SDE Denoising Pipeline"""
+    results_tensors = []
+    to_pil = transforms.ToPILImage()
+    to_tensor = transforms.ToTensor()
+    # Pipeline requires PIL images
+    for i in range(img_tensor.shape[0]):
+        img = to_pil(img_tensor[i].cpu())
+        with torch.no_grad():
+            purified_img = pipeline(prompt="", image=img, strength=0.35, guidance_scale=0.0).images[0]
+        results_tensors.append(to_tensor(purified_img).to(DEVICE))
+    return torch.stack(results_tensors)
 
 # ---------------------------------------------------------------------------
 # Data Loading (ImageNet-1K validation set)
@@ -137,10 +142,11 @@ else:
 # Main Loop Setup
 # ---------------------------------------------------------------------------
 results = {
-    "Clean": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "VAE_Succ": 0},
-    "RGB PGD": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "VAE_Succ": 0},
-    "OKLCH PGD": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "VAE_Succ": 0},
-    "Luminance Grid": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "VAE_Succ": 0}
+    "Clean": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "Diffusion_Succ": 0},
+    "RGB PGD": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "Diffusion_Succ": 0},
+    "OKLCH PGD": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "Diffusion_Succ": 0},
+    "Luminance Grid (L)": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "Diffusion_Succ": 0},
+    "Chromic Interference (L+C)": {"lpips": [], "Nodefense_Succ": 0, "JPEG_Succ": 0, "TV_Succ": 0, "Diffusion_Succ": 0}
 }
 total_images = len(sample_files)
 
@@ -201,43 +207,28 @@ for i, img_name in enumerate(sample_files):
         x_oklch_pgd = color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch, steps=12)).clamp(0, 1)
 
     # 4. Chromic Interference (Universal Structural Grid)
-    #    Deterministic sin(x/T)*sin(y/T) applied to OKLCH Lightness channel
-    """
-    [Logic Block]
-    Operation: Chromic Interference (Structural Matrix Evaluation)
-    Algebra:
-      1. Generates 2D array: grid = cos(x / 2.0) * cos(y / 2.0)
-      2. Isolates proprietary L vector: L_ch = OKLCH[:, 0:1]
-      3. Overlays constraints: L_adv = clip(L_ch + epsilon * grid, 0, 1)
-      4. Recombines and Gamut Clips: rgb = gamut_clip([L_adv, C, H])
-    Purpose: Evaluates localized topological resistance to explicit geometric manipulation via native continuous grid injection avoiding high L_inf spikes.
-    """
-    with torch.no_grad():
-        _, _, h, w = x_clean.shape
-        grid_x = torch.arange(w, device=DEVICE).float().view(1, 1, 1, w)
-        grid_y = torch.arange(h, device=DEVICE).float().view(1, 1, h, 1)
-        grid = torch.cos(grid_x / 2.0) * torch.cos(grid_y / 2.0)  # Canonical DCT-aligned grid
+    #    Evaluates localized topological resistance to explicit geometric manipulation via native continuous grid injection avoiding high L_inf spikes.
+    atk_grid_l = TopologicalAttractor(eps=SETTINGS["ThreatMappings"]["eps_structural"], channel="L")
+    atk_grid_lc = TopologicalAttractor(eps=SETTINGS["ThreatMappings"]["eps_structural"], channel="L+C")
 
-        img_oklch = color_ops.rgb_to_oklch(x_clean)
-        L_ch = img_oklch[:, 0:1]
-        amplitude = SETTINGS["ThreatMappings"]["eps_structural"]
-        L_adv = (L_ch + amplitude * grid).clamp(0, 1)
-        adv_oklch_ci = torch.cat([L_adv, img_oklch[:, 1:2], img_oklch[:, 2:3]], dim=1)
-        x_chromic = color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch_ci, steps=12)).clamp(0, 1)
+    with torch.no_grad():
+        x_chromic_l = atk_grid_l(x_clean, color_ops)
+        x_chromic_lc = atk_grid_lc(x_clean, color_ops)
 
     attacks = {
         "Clean": x_clean_adv,
         "RGB PGD": x_rgb_pgd,
         "OKLCH PGD": x_oklch_pgd,
-        "Luminance Grid": x_chromic
+        "Luminance Grid (L)": x_chromic_l,
+        "Chromic Interference (L+C)": x_chromic_lc
     }
     
     # Evaluate Pipeline
     for atk_name, x_adv in attacks.items():
         # LPIPS
         with torch.no_grad():
-            img1 = x_clean * 2 - 1 
-            img2 = x_adv * 2 - 1
+            img1 = x_clean * 2.0 - 1.0 
+            img2 = x_adv * 2.0 - 1.0
             lpips_val = loss_fn_lpips(img1, img2).item()
         results[atk_name]["lpips"].append(lpips_val)
 
@@ -255,20 +246,20 @@ for i, img_name in enumerate(sample_files):
         if evaluate_image(x_tv, y_true.item()):
             results[atk_name]["TV_Succ"] += 1
             
-        # VAE Autoencoder Defense
-        x_vae = defend_vae(x_adv)
+        # Diffusion Autoencoder Defense
+        x_vae = defend_diffusion(x_adv)
         if evaluate_image(x_vae, y_true.item()):
-            results[atk_name]["VAE_Succ"] += 1
+            results[atk_name]["Diffusion_Succ"] += 1
 
 print("\\n" + "="*80)
-print(f"{'Method':<22} | {'LPIPS':<8} | {'No Defense':<12} | {'JPEG (Q=50)':<12} | {'TV Denoise':<12} | {'Autoencoder'}")
+print(f"{'Method':<22} | {'LPIPS':<8} | {'No Defense':<12} | {'JPEG (Q=50)':<12} | {'TV Denoise':<12} | {'SD 1.5 (SDE)'}")
 print("-" * 80)
 for atk_name, stats in results.items():
     avg_lpips = np.mean(stats['lpips'])
     nodef_succ = (stats['Nodefense_Succ'] / total_images) * 100
     jpeg_succ = (stats['JPEG_Succ'] / total_images) * 100
     tv_succ = (stats['TV_Succ'] / total_images) * 100
-    vae_succ = (stats['VAE_Succ'] / total_images) * 100
+    vae_succ = (stats['Diffusion_Succ'] / total_images) * 100
     print(f"{atk_name:<22} | {avg_lpips:<8.4f} | {nodef_succ:<11.1f}% | {jpeg_succ:<11.1f}% | {tv_succ:<11.1f}% | {vae_succ:<11.1f}%")
 print("="*80)
 
@@ -279,5 +270,22 @@ out_data = {
 }
 out_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
 os.makedirs(out_dir, exist_ok=True)
-with open(os.path.join(out_dir, "benchmark_defenses_output.json"), "w") as f:
-    json.dump(out_data, f, indent=4)
+try:
+    with open(os.path.join(out_dir, "benchmark_defenses_output.json"), "w") as f:
+        json.dump(out_data, f, indent=4)
+except Exception as e:
+    print(f"JSON Dump Serialization Error: {e}")
+
+# Explicit CUDA/Xformers Teardown to prevent core dumps on script completion
+import gc
+try:
+    del pipeline
+    del model
+    del atk_rgb
+    del atk_oklch
+    del oklch_wrapper
+except: 
+    pass
+gc.collect()
+torch.cuda.empty_cache()
+print("Teardown completion successfully enforced - shutting down.")

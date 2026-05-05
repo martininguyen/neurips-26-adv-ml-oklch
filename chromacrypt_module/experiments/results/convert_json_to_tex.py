@@ -4,11 +4,11 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def build_table5():
-    with open(os.path.join(SCRIPT_DIR, "table5_channel_ablation.json"), "r") as f:
+    with open(os.path.join(SCRIPT_DIR, "table1_channel_ablation.json"), "r") as f:
         data = json.load(f)
         
     tex = "\\begin{table}[htbp]\n\\centering\n"
-    tex += "\\caption{White-Box Channel Ablation (PGD). Efficacy mapped by isolating gradient steps to specific OKLCH axes. Freezing Lightness (L) drastically degrades attack success rates ($98.8\\% \\rightarrow 75.0\\%$) against geometric classifiers, confirming spatial luminosity as the primary vulnerability vector.}\n"
+    tex += "\\caption{White-Box Channel Ablation (PGD). Efficacy mapped by isolating gradient steps to specific OKLCH axes.}\n"
     tex += "\\label{tab:channel_ablation}\n"
     tex += "\\resizebox{\\columnwidth}{!}{\n"
     tex += "\\begin{tabular}{@{}llcccccc@{}}\n\\toprule\n"
@@ -23,7 +23,7 @@ def build_table5():
         key_str = k.replace("$", "\\$") if "$" not in k else k # Keep math mode for key if exists
         tex += f"{key_str} & {lpips} & {rn} & {en} & {vit} & {vgg} & \\textbf{{{mean}}} \\\\\n"
     tex += "\\bottomrule\n\\end{tabular}\n}\n\\end{table}\n"
-    with open(os.path.join(SCRIPT_DIR, "table5_channel_ablation.tex"), "w") as f:
+    with open(os.path.join(SCRIPT_DIR, "table1_channel_ablation.tex"), "w") as f:
         f.write(tex)
 
 def build_table6():
@@ -31,7 +31,7 @@ def build_table6():
         data = json.load(f)
         
     tex = "\\begin{table}[htbp]\n\\centering\n"
-    tex += "\\caption{White-Box Chromatic Channel Ablation (Targeted Optimizations). Isolation mapping of geometric OKLCH dimensions verifies that L provides the overwhelming majority of adversarial viability. (Columns dictate target models).}\n"
+    tex += "\\caption{White-Box Chromatic Channel Ablation evaluating targeted optimizations across geometric OKLCH dimensions.}\n"
     tex += "\\label{tab:whitebox_channel_ablation}\n"
     tex += "\\resizebox{\\columnwidth}{!}{\n"
     tex += "\\begin{tabular}{@{}llccccc@{}}\n\\toprule\n"
@@ -50,14 +50,14 @@ def build_table6():
         f.write(tex)
 
 def build_table7():
-    with open(os.path.join(SCRIPT_DIR, "table7_transferability_ablation.json"), "r") as f:
+    with open(os.path.join(SCRIPT_DIR, "table8_transferability_ablation.json"), "r") as f:
         data = json.load(f)
         
     res = data.get("results", data)
     surrogate = data.get("metadata", {}).get("surrogate_model", "ResNet50")
         
     tex = "\\begin{table}[htbp]\n\\centering\n"
-    tex += f"\\caption{{Black-Box Transferability matrix targeting surrogate gradients from {surrogate}. Transfer success metrics identify that standard uncharacterized iterative perturbations fundamentally fail to generalize to Vision Transformers.}}\n"
+    tex += f"\\caption{{Black-Box Transferability matrix targeting surrogate gradients from {surrogate}.}}\n"
     tex += "\\label{tab:transferability_matrix}\n"
     tex += "\\resizebox{\\columnwidth}{!}{\n"
     tex += "\\begin{tabular}{@{}llcccccc@{}}\n\\toprule\n"
@@ -72,11 +72,11 @@ def build_table7():
         mean = f"{v['mean_asr']:.1f}\\%"
         tex += f"{k} & {lpips} & {alx} & {vgg} & {mob} & {eff} & {vit} & \\textbf{{{mean}}} \\\\\n"
     tex += "\\bottomrule\n\\end{tabular}\n}\n\\end{table}\n"
-    with open(os.path.join(SCRIPT_DIR, "table7_transferability_ablation.tex"), "w") as f:
+    with open(os.path.join(SCRIPT_DIR, "table8_transferability_ablation.tex"), "w") as f:
         f.write(tex)
 
 def build_table9():
-    with open(os.path.join(SCRIPT_DIR, "table9_full_benchmark.json"), "r") as f:
+    with open(os.path.join(SCRIPT_DIR, "table3_full_benchmark.json"), "r") as f:
         data = json.load(f)
         
     res = data.get("results", data)
@@ -86,7 +86,7 @@ def build_table9():
     n_str = f"{n_count:,}".replace(",", "{,}")
         
     tex = "\\begin{table}[htbp]\n\\centering\n"
-    tex += f"\\caption{{Structural Trap SOTA Diagnostic ($N={n_str}$). Injecting the explicit structural harmonic via the Chromic Grid guarantees critical topological override across both convolutional and transformer-based discriminators. Unlike standard noise, structural grid metrics directly mirror the inherent clean baselines of standard unconstrained benchmarks.}}\n"
+    tex += f"\\caption{{Structural Trap Baseline Diagnostic ($N={n_str}$). Benchmarking adversarial efficacy of the explicit structural harmonic via the Chromic Grid across both convolutional and transformer-based discriminators.}}\n"
     tex += "\\label{tab:full_benchmark}\n"
     tex += "\\resizebox{\\columnwidth}{!}{\n"
     tex += "\\begin{tabular}{@{}lcccc@{}}\n\\toprule\n"
@@ -99,7 +99,7 @@ def build_table9():
         model_name = k.replace("_", "-")
         tex += f"{model_name} & {clean} & {nat} & {gl} & \\textbf{{{glc}}} \\\\\n"
     tex += "\\bottomrule\n\\end{tabular}\n}\n\\end{table}\n"
-    with open(os.path.join(SCRIPT_DIR, "table9_full_benchmark.tex"), "w") as f:
+    with open(os.path.join(SCRIPT_DIR, "table3_full_benchmark.tex"), "w") as f:
         f.write(tex)
 
 if __name__ == '__main__':

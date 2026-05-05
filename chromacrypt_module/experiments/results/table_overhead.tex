@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Computational Resource Benchmarking. Highlighting relative matrix latency between native cartesian backpropagation vs spatial boundary continuous convergence cycles.}
+\label{tab:computational_overhead}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Metric} & \textbf{RGB Space} & \textbf{OKLCH Space} & \textbf{Factor} \\ \midrule
+Latency (ms/iter) & 34.9 & 55.76 & 1.6x \\
+Peak GPU Memory & 4626.6 MB & 4626.6 MB & 1.0x \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

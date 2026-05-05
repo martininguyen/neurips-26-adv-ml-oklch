@@ -1,0 +1,46 @@
+{
+    "metadata": {
+        "N": 1000
+    },
+    "results": {
+        "resnet50": {
+            "Clean_Accuracy": 0.795,
+            "Natural_ASR": 0.8264150943396227,
+            "Natural_LPIPS": 0.560781380534172,
+            "Natural_SSIM": 0.0,
+            "Grid_L_ASR": 0.7358490566037735,
+            "Grid_L_LPIPS": 0.44853695929050447,
+            "Grid_L_SSIM": 0.0,
+            "Grid_LC_ASR": 0.8679245283018868,
+            "Grid_LC_LPIPS": 0.5379522830247879,
+            "Grid_LC_SSIM": 0.0,
+            "Total": 1000
+        },
+        "Salman2020Do_R50": {
+            "Clean_Accuracy": 0.641,
+            "Natural_ASR": 0.9375975039001561,
+            "Natural_LPIPS": 0.5608328878879547,
+            "Natural_SSIM": 0.0,
+            "Grid_L_ASR": 0.7893915756630265,
+            "Grid_L_LPIPS": 0.44853695929050447,
+            "Grid_L_SSIM": 0.0,
+            "Grid_LC_ASR": 0.9095163806552262,
+            "Grid_LC_LPIPS": 0.5379522830247879,
+            "Grid_LC_SSIM": 0.0,
+            "Total": 1000
+        },
+        "Salman2020Do_50_2": {
+            "Clean_Accuracy": 0.682,
+            "Natural_ASR": 0.9325513196480938,
+            "Natural_LPIPS": 0.5607833236455917,
+            "Natural_SSIM": 0.0,
+            "Grid_L_ASR": 0.7785923753665689,
+            "Grid_L_LPIPS": 0.44853695929050447,
+            "Grid_L_SSIM": 0.0,
+            "Grid_LC_ASR": 0.9002932551319648,
+            "Grid_LC_LPIPS": 0.5379522830247879,
+            "Grid_LC_SSIM": 0.0,
+            "Total": 1000
+        }
+    }
+}

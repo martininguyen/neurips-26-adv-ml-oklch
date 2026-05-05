@@ -1,16 +1,18 @@
 \begin{table}[htbp]
 \centering
-\caption{Defenses Benchmark.}
+\small
+\caption{Classical and Generative Purification Evaluation. Benchmarking structurally explicit attacks against classical image processing filters and generative denoising pipelines.}
 \label{tab:defenses}
-\resizebox{\columnwidth}{!}{
-\begin{tabular}{@{}lccccc@{}}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}l|c|ccc@{}}
 \toprule
-\textbf{Method} & \textbf{LPIPS} & \textbf{No Defense} & \textbf{JPEG} & \textbf{TV} & \textbf{VAE} \\ \midrule
-Clean & 0.0000 & 20.2\% & 29.1\% & 36.4\% & 23.4\% \\
-RGB PGD & 0.2160 & 99.5\% & 44.7\% & 51.8\% & 45.0\% \\
-Oklch PGD & 0.0397 & 98.9\% & 32.5\% & 39.6\% & 30.4\% \\
-Chromic Interference & 0.1445 & 22.8\% & 34.5\% & 37.1\% & 28.4\% \\
+\textbf{Attack Model} & \textbf{No Defense} & \textbf{JPEG $Q=50$} & \textbf{TV Denoise} & \textbf{Diffusion} \\ \midrule
+Clean & 20.2\% & 29.1\% & 36.4\% & \textbf{96.2\%} \\
+RGB PGD & 98.2\% & 46.7\% & 54.7\% & \textbf{98.3\%} \\
+OKLCH PGD & 99.4\% & 35.5\% & 42.3\% & \textbf{98.0\%} \\
+Luminance Grid (L) & 76.0\% & 89.3\% & 87.8\% & \textbf{98.5\%} \\
+Chromic Interference (L+C) & 88.1\% & 90.5\% & 92.7\% & \textbf{99.2\%} \\
 \bottomrule
 \end{tabular}
-}
+\end{adjustbox}
 \end{table}

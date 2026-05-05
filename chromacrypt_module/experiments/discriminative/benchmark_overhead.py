@@ -92,15 +92,15 @@ def main():
         "Peak GPU Memory (MB)": round(max(rgb_mem, oklch_mem), 1)
     }
     
-    print("\n[ Table 14 Overhead Diagnostics ]")
+    print("\n[ LaTeX Table [Overhead Diagnostics] Synthesis ]")
     print(json.dumps(results, indent=4))
     
     out_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "table14_overhead.json"), "w") as f:
+    with open(os.path.join(out_dir, "table7_overhead.json"), "w") as f:
         json.dump(results, f, indent=4)
         
-    print("Table 14 export completed.")
+    print("LaTeX Table [Overhead Diagnostics] export completed.")
 
 if __name__ == "__main__":
     main()

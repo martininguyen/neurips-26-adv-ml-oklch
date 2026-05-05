@@ -1,0 +1,79 @@
+{
+    "RGB-PGD Baseline": {
+        "lpips": 0.19526999071240425,
+        "asr": {
+            "ResNet50": 99.9,
+            "ViT-B-16": 100.0,
+            "VGG16": 100.0,
+            "DenseNet121": 99.9,
+            "EfficientNet": 100.0
+        },
+        "mean_asr": 99.96
+    },
+    "OKLCH ($L+C+H$)": {
+        "lpips": 0.10866826623678208,
+        "asr": {
+            "ResNet50": 99.9,
+            "ViT-B-16": 99.8,
+            "VGG16": 99.9,
+            "DenseNet121": 99.9,
+            "EfficientNet": 100.0
+        },
+        "mean_asr": 99.9
+    },
+    "OKLCH ($L+C$) [Freeze $H$]": {
+        "lpips": 0.10417280234396457,
+        "asr": {
+            "ResNet50": 99.8,
+            "ViT-B-16": 99.6,
+            "VGG16": 99.9,
+            "DenseNet121": 99.9,
+            "EfficientNet": 100.0
+        },
+        "mean_asr": 99.83999999999999
+    },
+    "OKLCH ($C+H$) [Freeze $L$]": {
+        "lpips": 0.0361175037920475,
+        "asr": {
+            "ResNet50": 97.8,
+            "ViT-B-16": 96.1,
+            "VGG16": 99.7,
+            "DenseNet121": 99.9,
+            "EfficientNet": 97.8
+        },
+        "mean_asr": 98.26
+    },
+    "OKLCH ($L$) [Freeze $C+H$]": {
+        "lpips": 0.07840674594044686,
+        "asr": {
+            "ResNet50": 98.6,
+            "ViT-B-16": 96.5,
+            "VGG16": 99.9,
+            "DenseNet121": 99.9,
+            "EfficientNet": 99.8
+        },
+        "mean_asr": 98.94
+    },
+    "OKLCH ($C$) [Freeze $L+H$]": {
+        "lpips": 0.03077642237767577,
+        "asr": {
+            "ResNet50": 96.0,
+            "ViT-B-16": 92.60000000000001,
+            "VGG16": 99.6,
+            "DenseNet121": 99.9,
+            "EfficientNet": 96.39999999999999
+        },
+        "mean_asr": 96.9
+    },
+    "OKLCH ($H$) [Freeze $L+C$]": {
+        "lpips": 0.005890190869104117,
+        "asr": {
+            "ResNet50": 64.60000000000001,
+            "ViT-B-16": 58.199999999999996,
+            "VGG16": 78.4,
+            "DenseNet121": 83.0,
+            "EfficientNet": 60.699999999999996
+        },
+        "mean_asr": 68.98
+    }
+}

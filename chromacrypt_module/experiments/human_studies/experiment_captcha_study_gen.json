@@ -1,0 +1,17 @@
+{
+  "dataset": {
+    "output_dir": "study/Captcha"
+  },
+  "attack": {
+    "freq_mult": 4.0,
+    "amplitudes": [0.2, 0.5]
+  },
+  "generation": {
+    "pool_targets": {
+      "animal": 10,
+      "vehicle": 10,
+      "food": 10
+    },
+    "total_grids": 10
+  }
+}

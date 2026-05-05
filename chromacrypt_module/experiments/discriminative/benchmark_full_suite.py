@@ -109,7 +109,7 @@ def pga_channel_ablation(images, labels, model, color_ops, freeze_L, freeze_C, f
 
 def main():
     color_ops = cc.DifferentiableColorOps().to(DEVICE)
-    loss_fn_lpips = lpips.LPIPS(net="alex").to(DEVICE)
+    loss_fn_lpips = lpips.LPIPS(net="vgg").to(DEVICE)
     
     num_images = config["dataset"]["num_test_images"]
     batch_size = config["dataset"]["batch_size"]
@@ -176,7 +176,7 @@ def main():
             eps_s = config["ThreatMappings"]["eps_structural"]
             
             atk_nat = cc.NarrowbandMimicry(eps=eps_s)
-            atk_glc = cc.TopologicalAttractor(eps=eps_s)
+            atk_glc = cc.TopologicalAttractor(eps=eps_s, channel="LC")
             atk_patch = cc.AdvPatch(model=model, patch_size=config["purification"]["patch_size"])
             
             adv_nat = atk_nat(b_img, color_ops)
@@ -242,8 +242,8 @@ def main():
             "Avg_LPIPS_Footprint": total_glc_lpips / num_images
         }
         
-    with open(os.path.join(RESULTS_DIR, "table9_full_benchmark.json"), "w") as f: json.dump({"metadata":{"N": num_images}, "results": table9_data}, f, indent=4)    
-    with open(os.path.join(RESULTS_DIR, "table12_structured_baselines.json"), "w") as f: json.dump(table12_data, f, indent=4)
+    with open(os.path.join(RESULTS_DIR, "table3_full_benchmark.json"), "w") as f: json.dump({"metadata":{"N": num_images}, "results": table9_data}, f, indent=4)    
+    with open(os.path.join(RESULTS_DIR, "table10_structured_baselines.json"), "w") as f: json.dump(table12_data, f, indent=4)
 
     # TABLE 5 LOOP
     t5_models = config["ablation"]["target_models"]
@@ -295,7 +295,7 @@ def main():
         
     # Re-structure for JSON omitting functions
     out_table5 = {k: {"lpips": v["lpips"], "asr": v["asr"], "mean_asr": v["mean_asr"]} for k,v in table5_data.items()}
-    with open(os.path.join(RESULTS_DIR, "table5_channel_ablation.json"), "w") as f: json.dump(out_table5, f, indent=4)
+    with open(os.path.join(RESULTS_DIR, "table1_channel_ablation.json"), "w") as f: json.dump(out_table5, f, indent=4)
     
     print("\nOrchestrator Sequence Complete. JSON traces successfully dumped. Execute 'generate_latex_tables.py' hook to finalize matrices.")
 

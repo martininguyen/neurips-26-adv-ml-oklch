@@ -46,8 +46,8 @@ def load_env():
             if "HUGGINGFACE_ACCESS_TOKEN" in os.environ:
                 # Force override to prevent Windows system env conflicts
                 os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_ACCESS_TOKEN"]
-            import huggingface_hub
-            huggingface_hub.login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
+            import logging
+            logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
             return
 
 # Auto-execute env logic to instantly satisfy down-stream module initializations natively
@@ -58,6 +58,12 @@ def find_imagenet_dir():
         if os.path.isdir(d):
             return d
     raise FileNotFoundError(f"ImageNet-1K not found in standard directories.")
+
+def tensor_to_pil(img_tensor):
+    return transforms.ToPILImage()(img_tensor.cpu().clamp(0, 1))
+
+def pil_to_tensor(img_pil):
+    return transforms.ToTensor()(img_pil)
 
 def load_victim_model():
     try:
@@ -71,7 +77,12 @@ def load_imagenet_val_batch(n_examples=20, offset=0):
     image_paths = sorted(glob.glob(os.path.join(data_dir, "*.JPEG")) + glob.glob(os.path.join(data_dir, "*.jpg")))
     
     selected = image_paths[offset:offset + n_examples]
-    t = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
+    # Canonical ImageNet pipeline evaluates CenterCrops to preserve continuous geometric aspect ratios
+    t = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor()
+    ])
     batch = torch.stack([t(Image.open(p).convert("RGB")) for p in selected]).to(DEVICE)
     
     mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(DEVICE)

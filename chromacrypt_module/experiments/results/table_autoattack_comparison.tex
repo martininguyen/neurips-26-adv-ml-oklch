@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Gradient Obfuscation Diagnostic ($N=1{,}000$). Evaluating identically restricted $L_{\infty}$ gradient trajectories ($\leq\epsilon=4/255$) executed by the AutoAttack ensemble on core baseline and robust architectures.}
+\label{tab:sota_optimizer_comparison}
+\begin{adjustbox}{max width=\linewidth}%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Target Structure} & \textbf{RGB AutoAttack ASR} & \textbf{OKLCH AutoAttack ASR} & \textbf{Avg LPIPS ($\Delta$)} \\ \midrule
+Liu2023-ConvNeXt-L & \textbf{38.7\%} & 26.2\% & 0.0081 \\
+Xu2024-Swin-L & \textbf{40.3\%} & 27.1\% & 0.0093 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

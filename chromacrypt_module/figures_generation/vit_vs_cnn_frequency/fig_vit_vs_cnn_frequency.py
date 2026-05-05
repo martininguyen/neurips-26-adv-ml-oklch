@@ -8,21 +8,11 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-# Ensure output directory exists
-output_dir = "."
-os.makedirs(output_dir, exist_ok=True)
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import chromacrypt_module as cc
 
-def get_chromic_interference_grid(size=224, amp=0.5, freq=28.0):
-    x = torch.linspace(0, size-1, size)
-    y = torch.linspace(0, size-1, size)
-    X, Y = torch.meshgrid(x, y, indexing='ij')
-    # Chromic Interference Grid: sin(x/T) * sin(y/T)
-    # T = size / freq / 2 (approx)
-    # Let's just use the equation directly: sin(omega * x) * sin(omega * y)
-    omega = np.pi * (freq / size) # Maps freq 28 to roughly 28 cycles per image
-    
-    grid = amp * torch.sin(omega * X) * torch.sin(omega * Y)
-    return grid.unsqueeze(0).repeat(3, 1, 1) # [3, H, W]
+
 
 def compute_saliency(model, image):
     model.eval()
@@ -58,7 +48,7 @@ def main():
     # Dummy Image (Neutral Gray) + Chromic Interference Grid
     # We use a neutral background to isolate the grid's effect on saliency
     base_img = torch.ones(3, 224, 224) * 0.5
-    grid = get_chromic_interference_grid(size=224, amp=0.2, freq=32.0) # slightly higher freq
+    grid = cc.generate_topological_grid(224, 224, device).squeeze(0) * 0.2
     attacked_img = (base_img + grid).clamp(0, 1).to(device)
     
     # Compute Saliency
@@ -97,10 +87,10 @@ def main():
     axes[1, 1].axis('off')
     
     plt.tight_layout()
-    output_path = os.path.join(output_dir, "fig_vit_vs_cnn_fft.png")
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), output_path), dpi=300)
+    out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "experiments", "results", "figures")
+    os.makedirs(out_dir, exist_ok=True)
+    output_path = os.path.join(out_dir, "fig_vit_vs_cnn_fft.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Saved proof to {output_path}")
 
 if __name__ == "__main__":

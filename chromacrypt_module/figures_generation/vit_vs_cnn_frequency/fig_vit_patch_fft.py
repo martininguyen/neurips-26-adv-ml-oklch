@@ -57,10 +57,11 @@ def analyze_first_layer_embeddings():
     fig.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
     
     plt.tight_layout()
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(out_dir), 'fig_vit_patch_fft.png'), dpi=300)
-    print(f"Saved to {os.path.join(out_dir, 'fig_vit_patch_fft.png')}")
+    out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "experiments", "results", "figures")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, 'fig_vit_patch_fft.png')
+    plt.savefig(out_path, dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {out_path}")
 
 if __name__ == "__main__":
     analyze_first_layer_embeddings()

@@ -1,0 +1,10 @@
+{
+  "dataset": {
+    "num_samples": 50,
+    "output_dir": "study/2FAC"
+  },
+  "attack": {
+    "oklch_eps": 0.005,
+    "steps": 10
+  }
+}

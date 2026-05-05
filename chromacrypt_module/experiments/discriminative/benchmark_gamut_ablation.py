@@ -1,5 +1,9 @@
 import os
 import sys
+import warnings
+os.environ["HUGGINGFACE_HUB_VERBOSITY"] = "error"
+warnings.simplefilter("ignore")
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 import torch
 import torch.nn as nn
@@ -60,8 +64,6 @@ class FlatFolderDataset(torch.utils.data.Dataset):
             return torch.zeros(3, 224, 224), idx
 
 DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
-
-print(f"Running Ablation Support on {DEVICE}")
 
 # -----------------------------------------------------------------------------
 # Patched Gamut Clip with Variable Steps
@@ -141,7 +143,7 @@ def run_attack_step_ablation(images, model, color_ops, steps):
     # Strict Gamut Mapping with 'steps'
     adv_oklch_clipped = color_ops.gamut_clip_preserve_hue(adv_oklch_unclipped, steps=steps)
     
-    img_adv = color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch_clipped, steps=12)).clamp(0, 1)
+    img_adv = color_ops.oklch_to_rgb(adv_oklch_clipped).clamp(0, 1)
     
     torch.cuda.synchronize() if DEVICE == "cuda" else None
     latency = (time.time() - t0) * 1000 # ms
@@ -158,6 +160,7 @@ def run_attack_step_ablation(images, model, color_ops, steps):
     return preds_adv, latency
 
 def main():
+    print(f"Running Ablation Support on {DEVICE}")
     color_ops = cc.DifferentiableColorOps().to(DEVICE)
     
     # Load ResNet50

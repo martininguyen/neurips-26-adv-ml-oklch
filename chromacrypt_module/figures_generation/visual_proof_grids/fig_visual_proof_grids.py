@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Ensure we can import the color ops
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 try:
-    from color_ops import DifferentiableColorOps
+    from chromacrypt_module.color_ops import DifferentiableColorOps
 except ImportError:
     print("Error: color_ops.py not found. Please ensure it exists in the same directory.")
     sys.exit(1)
@@ -180,6 +180,7 @@ class OKLCHModelWrapper(nn.Module):
 def apply_oklch_pgd(modelWrapper, img_tensor, color_ops, eps=0.005, alpha=0.001, steps=10):
     import torch
     import torch.nn as nn
+    from chromacrypt_module.attacks import ChromicPGD
     """
     ChromicPGD (Targeted bounded evaluation implicitly extracting formal iterations natively mapping pseudo bounds geometrically identically)
     """
@@ -346,9 +347,9 @@ def main():
 
     plt.tight_layout()
     output_path = "fig_chromic_interference_extended_grid.png"
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), output_path), dpi=150)
+    out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "experiments", "results", "figures")
+    os.makedirs(out_dir, exist_ok=True)
+    plt.savefig(os.path.join(out_dir, output_path), dpi=150, bbox_inches='tight')
     print(f"Saved composite visualization to {output_path}")
 
     # ------------------
@@ -385,9 +386,7 @@ def main():
 
     plt.tight_layout()
     output_path_sal = "fig_chromic_interference_saliency_grid.png"
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), output_path_sal), dpi=150)
+    plt.savefig(os.path.join(out_dir, output_path_sal), dpi=150, bbox_inches='tight')
     print(f"Saved saliency visualization to {output_path_sal}")
 
     # Continue to Cross-Model Logic
@@ -483,9 +482,7 @@ def main():
         
     plt.tight_layout()
     cm_path = "fig_cross_model_saliency.png"
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), cm_path), dpi=150)
+    plt.savefig(os.path.join(out_dir, cm_path), dpi=150, bbox_inches='tight')
     print(f"Saved Cross-Model Visualization to {cm_path}")
 
     # ------------------
@@ -540,7 +537,7 @@ def main():
 
     plt.tight_layout()
     mat_path = "fig_model_class_matrix.png"
-    fig_mat.savefig(mat_path, dpi=150)
+    fig_mat.savefig(os.path.join(out_dir, mat_path), dpi=150, bbox_inches='tight')
     print(f"Saved Matrix Visualization to {mat_path}")
 
     # ------------------
@@ -609,7 +606,7 @@ def main():
 
     plt.subplots_adjust(wspace=0.05, hspace=0.05)
     pal_path = "fig_extended_palettes.png"
-    fig_pal.savefig(pal_path, dpi=150, bbox_inches='tight')
+    fig_pal.savefig(os.path.join(out_dir, pal_path), dpi=150, bbox_inches='tight')
     print(f"Saved Extended Palettes to {pal_path}")
 
     # ------------------
@@ -668,7 +665,7 @@ def main():
         
     plt.tight_layout()
     chan_path = "fig_channel_ablation_examples.png"
-    fig_chan.savefig(chan_path, dpi=150)
+    fig_chan.savefig(os.path.join(out_dir, chan_path), dpi=150, bbox_inches='tight')
     print(f"Saved Channel Ablation Examples to {chan_path}")
 
     # ------------------
@@ -738,7 +735,7 @@ def main():
 
     plt.tight_layout()
     mat_path = "fig_refined_model_class_matrix.png"
-    fig_mat.savefig(mat_path, dpi=150)
+    fig_mat.savefig(os.path.join(out_dir, mat_path), dpi=150, bbox_inches='tight')
     print(f"Saved Refined Figure 5 to {mat_path}")
 
     # ------------------

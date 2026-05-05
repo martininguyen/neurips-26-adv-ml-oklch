@@ -58,34 +58,24 @@ def run_benchmark():
     models_dict = load_models()
     color_ops = cc.DifferentiableColorOps().to(DEVICE)
     
-    # Data Setup
-    img_dir = "../data/imagenet-1k"
-    if not os.path.exists(img_dir):
-        img_dir = "data/imagenet-1k" # Fallback
-        
-    all_files = sorted(glob.glob(os.path.join(img_dir, "*.JPEG")))
-    if not all_files:
-        print("No images found.")
-        return
-
     # Configuration
     N = SETTINGS["dataset"]["num_test_images"]
     print(f"Benchmarking on {N} images...")
     
-    t = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor()
-    ])
+    try:
+        imgs, lbls, _, _ = core_utils.load_imagenet_val_batch(n_examples=N, offset=0)
+    except Exception as e:
+        print(f"No images found. Error: {e}")
+        return
     
     # Store results: [Model][Channel] = #Success
     stats = {m: {'L': 0, 'C': 0, 'H': 0, 'Total': 0} for m in models_dict.keys()}
     
-    for i, path in enumerate(all_files):
-        if i >= N: break
+    for i in range(N):
+        if i >= len(imgs): break
         
         try:
-            img_pil = Image.open(path).convert('RGB')
-            img_tensor = t(img_pil).unsqueeze(0).to(DEVICE)
+            img_tensor = imgs[i:i+1].to(DEVICE)
             b, c, h, w = img_tensor.shape
             grid = cc.generate_topological_grid(h, w, DEVICE)
             
@@ -96,8 +86,8 @@ def run_benchmark():
             H_ch = oklch[:, 2:3, :, :]
             
             # Load attack parameters from config
-            l_int = SETTINGS.get("attack", {}).get("eps_structural", 0.2)
-            c_int = SETTINGS.get("attack", {}).get("eps_chromic", 8.0) / 100.0  # Normalized to 0.08
+            l_int = SETTINGS.get("ThreatMappings", {}).get("eps_structural", 0.2)
+            c_int = SETTINGS.get("ThreatMappings", {}).get("eps_chromic", 0.08)
             h_int = 45.0  # Geometrically scaled phase rotation fallback
             
             # --- ATTACKS ---
@@ -115,7 +105,7 @@ def run_benchmark():
             Purpose: Identifies isolated failure vectors natively intrinsic to distinct dimensions of topological perception independent of scalar color values.
             """
             # 1. L-Attack (Structural Interference)
-            L_mod = (L + l_int * grid) # L is 0-1 usually
+            L_mod = (L + l_int * grid).clamp(0, 1) # L is 0-1 usually
             inv_L = torch.cat([L_mod, C, H_ch], dim=1)
             img_L = color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(inv_L, steps=12)).clamp(0, 1)
             
@@ -153,7 +143,7 @@ def run_benchmark():
 
     # Print Markdown Table
     print("\n\n### Model Failure Analysis")
-    print("| Model Type | Chromic Interference (L) Success | Chroma (C) Success | Hue (H) Success | Primary Failure Channel |")
+    print("| Model Type | Luminance (L) Success | Chroma (C) Success | Hue (H) Success | Primary Failure Channel |")
     print("| :--- | :--- | :--- | :--- | :--- |")
     
     for m_name, data in stats.items():

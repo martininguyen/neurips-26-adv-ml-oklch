@@ -1,0 +1,30 @@
+{
+    "metadata": {
+        "N": 1000
+    },
+    "total_images": 795,
+    "patch": {
+        "pre_success": 344,
+        "post_success": 778,
+        "rescued": 3,
+        "snr_survived": 437
+    },
+    "grid": {
+        "pre_success": 585,
+        "post_success": 782,
+        "rescued": 6,
+        "snr_survived": 203
+    },
+    "grid_chromic": {
+        "pre_success": 690,
+        "post_success": 791,
+        "rescued": 1,
+        "snr_survived": 102
+    },
+    "natural": {
+        "pre_success": 653,
+        "post_success": 789,
+        "rescued": 2,
+        "snr_survived": 138
+    }
+}

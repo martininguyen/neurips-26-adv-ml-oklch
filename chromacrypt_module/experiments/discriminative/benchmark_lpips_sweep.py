@@ -1,5 +1,9 @@
 import os
 import sys
+import warnings
+os.environ["HUGGINGFACE_HUB_VERBOSITY"] = "error"
+warnings.simplefilter("ignore")
+
 import torch
 import torch.nn as nn
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
@@ -59,7 +63,7 @@ def match_lpips(img_tensor, loss_fn_vgg, color_ops, target_lpips, mode='rgb', ba
 
 def main():
     color_ops = DifferentiableColorOps().to(DEVICE)
-    loss_fn_vgg = lpips.LPIPS(net="alex").to(DEVICE)
+    loss_fn_vgg = lpips.LPIPS(net="vgg").to(DEVICE)
     try:
         model = load_model(model_name="Liu2023Comprehensive_ConvNeXt-L", dataset='imagenet', threat_model='Linf').to(DEVICE).eval()
         normalize = lambda x: x

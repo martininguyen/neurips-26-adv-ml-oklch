@@ -47,6 +47,16 @@ class DifferentiableBlur(nn.Module):
         # x is (B, C, H, W) in RGB
         return F.conv2d(x, self.weights, padding=self.padding, groups=self.groups)
 
+class GamutClipSTE(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, original_input, clipped_output):
+        return clipped_output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        # Explicit Straight-Through Estimator propagating phantom gradients unconditionally
+        return grad_output, None
+
 class DifferentiableColorOps(nn.Module):
     def __init__(self):
         super().__init__()
@@ -256,70 +266,50 @@ class DifferentiableColorOps(nn.Module):
         We binary search the Chroma C along the line [0, C] to find the boundary.
         Preserves L and H exactly.
         """
-        # Determine Check Dims
-        if oklch.dim() >= 3 and oklch.shape[-3] == 3:
-            c_idx = 1
-            # Extract L, H for reconstruction logic
-            # L = oklch[:, 0:1, :, :]
-            # H = oklch[:, 2:3, :, :]
-            C_orig = oklch[:, 1:2, :, :]
-        elif oklch.dim() >= 1 and oklch.shape[-1] == 3:
-            c_idx = -1
-            # L = oklch[..., 0:1]
-            # H = oklch[..., 2:3]
-            C_orig = oklch[..., 1:2]
-        else:
-            return oklch
+        with torch.no_grad():
+            # Detach to prevent catastrophic memory accumulation within the binary search loop
+            oklch_d = oklch.detach()
             
-        low = torch.zeros_like(C_orig)
-        high = C_orig
-        
-        # 10 steps of binary search is usually sufficient for RGB 8-bit precision
-        # (1/2^10 ~= 0.001)
-        # We want to find the MAX C that is valid.
-        
-        # Helper to check validity
-        def is_valid(C_test):
-            # Construct OKLCH candidate
-            if c_idx == 1:
-                cand = torch.cat([oklch[:, 0:1, :, :], C_test, oklch[:, 2:3, :, :]], dim=1)
+            # Determine Check Dims
+            if oklch_d.dim() >= 3 and oklch_d.shape[-3] == 3:
+                c_idx = 1
+                C_orig = oklch_d[:, 1:2, :, :]
+            elif oklch_d.dim() >= 1 and oklch_d.shape[-1] == 3:
+                c_idx = -1
+                C_orig = oklch_d[..., 1:2]
             else:
-                cand = torch.cat([oklch[..., 0:1], C_test, oklch[..., 2:3]], dim=-1)
+                return oklch
+                
+            low = torch.zeros_like(C_orig)
+            high = C_orig
             
-            rgb = self.oklch_to_rgb(cand)
-            
-            # Epsilon tolerance for "soft" validity
-            eps = 1e-4
-            mask_lower = (rgb < -eps).any(dim=c_idx if c_idx == -1 else -3, keepdim=True)
-            mask_upper = (rgb > 1 + eps).any(dim=c_idx if c_idx == -1 else -3, keepdim=True)
-            return ~(mask_lower | mask_upper)
-            
-        # Binary Search Loop
-        # We always maintain: 'low' is valid (or 0), 'high' attempts to reach C_orig
-        
-        # Optimization: First check if original high is valid
-        # This saves compute for the 99% of pixels that are already valid
-        mask_valid_high = is_valid(high)
-        # If valid, we are done for those pixels?
-        # We can implement this optimization by masked updates, or just run the search everywhere.
-        # Running everywhere is simpler for differentiability logic, but slightly slower.
-        # Let's run everywhere for robustness.
-        
-        for _ in range(steps): # Number of iterations for precision
-            mid = (low + high) * 0.5
-            valid_mask = is_valid(mid)
-            
-            # If mid is valid, we can try higher C (so low = mid)
-            # If mid is invalid, we must go lower (so high = mid)
-            low = torch.where(valid_mask, mid, low)
-            high = torch.where(valid_mask, high, mid)
-            
-        # Construct final Valid OKLCH
-        # Use 'low' because it guarantees validity (as much as possible)
-        # 'high' might be just outside.
-        if c_idx == 1:
-            final_oklch = torch.cat([oklch[:, 0:1, :, :], low, oklch[:, 2:3, :, :]], dim=1)
-        else:
-            final_oklch = torch.cat([oklch[..., 0:1], low, oklch[..., 2:3]], dim=-1)
+            # Helper to check validity
+            def is_valid(C_test):
+                if c_idx == 1:
+                    cand = torch.cat([oklch_d[:, 0:1, :, :], C_test, oklch_d[:, 2:3, :, :]], dim=1)
+                else:
+                    cand = torch.cat([oklch_d[..., 0:1], C_test, oklch_d[..., 2:3]], dim=-1)
+                
+                rgb = self.oklch_to_rgb(cand)
+                
+                # Epsilon tolerance for "soft" validity
+                eps = 1e-4
+                mask_lower = (rgb < -eps).any(dim=c_idx if c_idx == -1 else -3, keepdim=True)
+                mask_upper = (rgb > 1 + eps).any(dim=c_idx if c_idx == -1 else -3, keepdim=True)
+                return ~(mask_lower | mask_upper)
+                
+            for _ in range(steps): # Number of iterations for precision
+                mid = (low + high) * 0.5
+                valid_mask = is_valid(mid)
+                
+                low = torch.where(valid_mask, mid, low)
+                high = torch.where(valid_mask, high, mid)
+                
+            # Construct final Valid OKLCH mapped on detached state
+            if c_idx == 1:
+                final_oklch = torch.cat([oklch_d[:, 0:1, :, :], low, oklch_d[:, 2:3, :, :]], dim=1)
+            else:
+                final_oklch = torch.cat([oklch_d[..., 0:1], low, oklch_d[..., 2:3]], dim=-1)
 
-        return final_oklch
+        # Utilize Straight-Through Estimator to bridge the non-differentiable tracking block
+        return GamutClipSTE.apply(oklch, final_oklch)

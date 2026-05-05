@@ -68,6 +68,10 @@ class GradCAM:
         # Shape seen: (49, 1536) -> This is likely (H*W, C) for 7x7 spatial
         if len(gradients.shape) == 2:
             s_len, n_ch = gradients.shape
+            if int(np.sqrt(s_len - 1)) ** 2 == (s_len - 1): # ViT CLS token check
+                gradients = gradients[1:]
+                activations = activations[1:]
+                s_len -= 1
             side = int(np.sqrt(s_len)) 
             if side * side == s_len:
                 # Reshape to (C, H, W)
@@ -112,19 +116,7 @@ def get_saliency(model, input_tensor, class_idx=None):
 from chromacrypt_module.attacks import NarrowbandMimicry
 from chromacrypt_module.color_ops import DifferentiableColorOps
 
-def apply_narrowband_noise(img_tensor, bandwidth=2.0, seed=42):
-    """Natural Structural Attack (Fx4.0) mapped identical to execution parameters"""
-    torch.manual_seed(seed)
-    color_ops = DifferentiableColorOps().to(DEVICE)
-    attacker = NarrowbandMimicry(eps=0.2, freq_mult=4.0, bw=bandwidth)
-    
-    # We simply execute passing empty color_ops mapping since NarrowbandMimicry handles application
-    adv_img = attacker(img_tensor, color_ops)
-    
-    # By extracting Delta via subtraction, we can preserve the inline scaling API of the existing loops dynamically natively
-    noise = adv_img - img_tensor
-    
-    return noise / (0.2 + 1e-8) # Re-normalize out the internal amplitude scaling logically mirroring structural expectation
+
 
 # -----------------------------------------------------------------------------
 # Main Analysis
@@ -242,8 +234,9 @@ def main():
                 clean_pred = clean_logits.argmax(dim=1).item()
             
             # Generate Attack
-            noise = apply_narrowband_noise(img)
-            img_adv = (img + 0.2 * noise).clamp(0, 1) # Note AMP=0.2 from benchmark
+            color_ops = DifferentiableColorOps().to(DEVICE)
+            attacker = NarrowbandMimicry(eps=0.2, channel="C")
+            img_adv = attacker(img, color_ops)
             
             # Adv Pred
             with torch.no_grad():
@@ -358,9 +351,10 @@ def main():
             plt.suptitle(title, fontsize=45)
             plt.tight_layout(pad=2.0, w_pad=2.0, h_pad=2.0)
             plt.subplots_adjust(top=0.9)
-            os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__)))), exist_ok=True)
-    plt.savefig(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'experiments', 'results', 'figures', os.path.basename(os.path.dirname(os.path.abspath(__file__))), filename), dpi=150)
+            out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'experiments', 'results', 'figures')
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, filename)
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
             print(f"Saved {filename}")
 
         plot_grid(successes, f"{model_short} - Successful Attacks", f"fig_robust_failures_{model_short}_success.png")

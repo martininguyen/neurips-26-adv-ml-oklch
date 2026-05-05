@@ -36,7 +36,7 @@ def main():
         elif t == "efficientnet_b0": targets["EfficientNet"] = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT).eval().to(DEVICE)
         elif t == "vit_b_16": targets["ViT-B-16"] = models.vit_b_16(weights=models.ViT_B_16_Weights.DEFAULT).eval().to(DEVICE)
     
-    loss_fn = lpips.LPIPS(net="alex").to(DEVICE)
+    loss_fn = lpips.LPIPS(net="vgg").to(DEVICE)
     
     attacks = {
         "RGB-PGD Baseline": cc.RGBPGD(model=surrogate, eps=eps_rgb), 
@@ -49,8 +49,8 @@ def main():
     }
     
     results = {atk: {"lpips": 0.0, "asr": {t: 0 for t in targets}, "mean_asr": 0.0} for atk in attacks}
-    total_imgs = 0
-    clean_correct = 0
+    target_clean_counts = {t: 0 for t in targets}
+    total_lpips_count = 0
 
     print("Executing iterative memory-safe evaluation loop (Surrogate: ResNet50)...")
     for offset in range(0, num_images, batch_size):
@@ -59,15 +59,20 @@ def main():
         img_tensor = images.to(DEVICE)
         lbl_tensor = labels.to(DEVICE)
         
-        # Verify clean mask on surrogate to align with structural constraints natively
+        # Verify clean mask intersecting with target domains strictly eliminating inherent misclassifications
         with torch.no_grad():
-            clean_preds = surrogate((img_tensor - mean)/std).argmax(dim=1)
-            clean_mask = (clean_preds == lbl_tensor)
-            clean_count = clean_mask.sum().item()
+            clean_preds_surr = surrogate((img_tensor - mean)/std).argmax(dim=1)
+            clean_mask_surr = (clean_preds_surr == lbl_tensor)
+            total_lpips_count += clean_mask_surr.sum().item()
+            
+            target_joint_masks = {}
+            for t_name, t_model in targets.items():
+                t_clean_preds = t_model((img_tensor - mean)/std).argmax(dim=1)
+                joint_mask = clean_mask_surr & (t_clean_preds == lbl_tensor)
+                target_joint_masks[t_name] = joint_mask
+                target_clean_counts[t_name] += joint_mask.sum().item()
         
-        if clean_count == 0: continue
-        total_imgs += clean_count
-        clean_correct += clean_count
+        if clean_mask_surr.sum().item() == 0: continue
 
         for atk_name, atk_fn in attacks.items():
             adv_img = atk_fn(img_tensor, lbl_tensor)
@@ -82,23 +87,25 @@ def main():
             Purpose: Mathematically assesses whether the adversarial boundary manipulation targets localized topological anomalies specific only to the ResNet mapping parameter space, or isolates continuous geometric vulnerabilities spanning universal hierarchical architectures.
             """
             with torch.no_grad():
-                results[atk_name]["lpips"] += loss_fn(img_tensor[clean_mask], adv_img[clean_mask]).sum().item()
-                adv_input = (adv_img[clean_mask] - mean) / std
+                results[atk_name]["lpips"] += loss_fn(img_tensor[clean_mask_surr] * 2.0 - 1.0, adv_img[clean_mask_surr] * 2.0 - 1.0).sum().item()
+                adv_input = (adv_img - mean) / std
                 
                 for t_name, t_model in targets.items():
-                    preds = t_model(adv_input).argmax(dim=1)
-                    results[atk_name]["asr"][t_name] += (preds != lbl_tensor[clean_mask]).float().sum().item()
-            print(f"  -> Evaluated {offset + curr_batch_size}/{num_images} base datasets (Valid Natural Clean Extrapolations: {clean_correct})")
+                    j_mask = target_joint_masks[t_name]
+                    if j_mask.sum().item() > 0:
+                        preds = t_model(adv_input[j_mask]).argmax(dim=1)
+                        results[atk_name]["asr"][t_name] += (preds != lbl_tensor[j_mask]).float().sum().item()
+            print(f"  -> Evaluated {offset + curr_batch_size}/{num_images} base datasets")
 
     # Aggregate
     for atk_name in results:
-        results[atk_name]["lpips"] /= clean_correct if clean_correct > 0 else 1
+        results[atk_name]["lpips"] /= total_lpips_count if total_lpips_count > 0 else 1
         for t_name in targets:
-            results[atk_name]["asr"][t_name] = (results[atk_name]["asr"][t_name] / clean_correct) * 100 if clean_correct > 0 else 0
+            results[atk_name]["asr"][t_name] = (results[atk_name]["asr"][t_name] / target_clean_counts[t_name]) * 100 if target_clean_counts[t_name] > 0 else 0
         results[atk_name]["mean_asr"] = sum(results[atk_name]["asr"].values()) / len(targets)
 
     print("\n" + "="*80)
-    print("LaTeX Table 7 Synthesis Ready:")
+    print("LaTeX Table [Transferability] Synthesis Ready:")
     print("-" * 80)
     print(f"{'Optimization Domain':<30} | {'AlexNet':>8} | {'VGG16':>8} | {'MobileNet':>9} | {'EfficientNet':>12} | {'ViT-B-16':>8} | {'Mean ASR':>8}")
     print("-" * 80)
@@ -114,10 +121,10 @@ def main():
 
     results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
     if not os.path.exists(results_dir): os.makedirs(results_dir)
-    with open(os.path.join(results_dir, 'table7_transferability.json'), 'w') as f:
+    with open(os.path.join(results_dir, 'table8_transferability.json'), 'w') as f:
         json.dump({"metadata": {"surrogate_model": "ResNet50", "N": num_images}, "results": results}, f, indent=4)
         
-    print("Table 7 Transferability Generation Complete. Data formatted natively.")
+    print("LaTeX Table [Transferability] Generation Complete. Data formatted natively.")
     
 if __name__ == "__main__":
     main()

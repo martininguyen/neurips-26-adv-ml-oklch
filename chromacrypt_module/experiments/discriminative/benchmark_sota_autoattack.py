@@ -70,12 +70,12 @@ def main():
     batch_size = config["dataset"]["batch_size"]
     target_models = config["autoattack"]["target_models"]
     eps_rgb = config["ThreatMappings"]["eps_autoattack_rgb"]
-    eps_oklch = config["ThreatMappings"]["eps_oklch_c"]
+    eps_oklch = 0.005 # Section 3.4 geometric parity
     
     print(f"Loading ChromaCrypt PGD Validation Validation (N={num_images})...", flush=True)
     
     color_ops = cc.DifferentiableColorOps().to(DEVICE)
-    loss_fn = lpips.LPIPS(net="alex").to(DEVICE)
+    loss_fn = lpips.LPIPS(net="vgg").to(DEVICE)
     
     # Pre-caching Images to CPU RAM to prevent CUDA Out-of-Memory Lockups
     images_cpu_list = []
@@ -93,8 +93,8 @@ def main():
     print(f"Aggregated {len(images)} System RAM images seamlessly.", flush=True)
     
     results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
-    json_path = os.path.join(results_dir, "table10_autoattack_comparison.json")
-    csv_path = os.path.join(results_dir, "table10_autoattack_comparison.csv")
+    json_path = os.path.join(results_dir, "table2_autoattack_comparison.json")
+    csv_path = os.path.join(results_dir, "table2_autoattack_comparison.csv")
     
     results = []
     if os.path.exists(json_path):
@@ -140,8 +140,8 @@ def main():
             
         adversary = AutoAttack(aa_wrapper_rgb, norm='Linf', eps=eps_rgb, version='standard', device=DEVICE)
         
-        # Aggressive memory constraint to prevent graphic VRAM lockups during APGD matrix operations
-        optimal_aa_bs = min(batch_size, 4)
+        # Dynamically scaled A100 memory constraint mapping to fully saturate 80GB VRAM arrays 
+        optimal_aa_bs = batch_size
         
         start = time.time()
         adv_aa = adversary.run_standard_evaluation(images.to(DEVICE), preds_clean.to(DEVICE), bs=optimal_aa_bs).cpu()
@@ -158,7 +158,7 @@ def main():
                 
                 b_pred = aa_wrapper_rgb(b_adv).argmax(dim=1)
                 rgb_wins += (b_pred != b_lbl).float().sum().item()
-                lpips_rgb += loss_fn(b_img, b_adv).sum().item()
+                lpips_rgb += loss_fn(b_img * 2.0 - 1.0, b_adv * 2.0 - 1.0).sum().item()
                 
         asr_rgb = (rgb_wins / num_images) * 100
         avg_lpips_rgb = lpips_rgb / num_images
@@ -166,6 +166,23 @@ def main():
         print("Running SOTA AutoAttack (OKLCH Native Bounds)...", flush=True)
         
         class CustomOKLCHWrapper(core_utils.OKLCHModelWrapper):
+            def unscale(self, x_norm):
+                L = x_norm[:, 0:1, :, :]
+                C = x_norm[:, 1:2, :, :]
+                H = x_norm[:, 2:3, :, :] * 360.0
+                if self.clean_oklch_norm is not None:
+                    clean_norm = self.clean_oklch_norm
+                    if x_norm.shape[0] != clean_norm.shape[0]:
+                        L_flat_x = x_norm[:, 0].view(x_norm.shape[0], -1)
+                        L_flat_clean = clean_norm[:, 0].view(clean_norm.shape[0], -1)
+                        diff = (L_flat_x.unsqueeze(1) - L_flat_clean.unsqueeze(0)).abs().sum(dim=2)
+                        matched_indices = diff.argmin(dim=1)
+                        clean_norm = clean_norm[matched_indices]
+                    if self.freeze_L: L = clean_norm[:, 0:1, :, :]
+                    if self.freeze_C: C = clean_norm[:, 1:2, :, :]
+                    if self.freeze_H: H = clean_norm[:, 2:3, :, :] * 360.0
+                return torch.cat([L, C, H], dim=1)
+
             def forward(self, x_norm):
                 oklch_input = self.unscale(x_norm)
                 clipped_oklch = self.color_ops.gamut_clip_preserve_hue(oklch_input, steps=12)
@@ -180,12 +197,12 @@ def main():
         with torch.no_grad():
             batch_oklch = color_ops.rgb_to_oklch(images.to(DEVICE))
             L = batch_oklch[:, 0:1]
-            C = batch_oklch[:, 1:2] / 0.4
+            C = batch_oklch[:, 1:2]
             H = batch_oklch[:, 2:3] / 360.0
             images_oklch_norm = torch.cat([L, C, H], dim=1).clamp(0, 1).cpu()
             
         oklch_model.clean_oklch_norm = images_oklch_norm.to(DEVICE)
-        adversary_oklch = AutoAttack(oklch_model, norm='Linf', eps=eps_rgb, version='standard', device=DEVICE)
+        adversary_oklch = AutoAttack(oklch_model, norm='Linf', eps=eps_oklch, version='standard', device=DEVICE)
         
         start_ok = time.time()
         adv_aa_oklch_norm = adversary_oklch.run_standard_evaluation(images_oklch_norm.to(DEVICE), preds_clean.to(DEVICE), bs=optimal_aa_bs).cpu()
@@ -205,7 +222,7 @@ def main():
                 
                 b_pred = oklch_model(b_adv_norm).argmax(dim=1)
                 oklch_wins += (b_pred != b_lbl).float().sum().item()
-                lpips_oklch += loss_fn(b_img, b_adv_rgb).sum().item()
+                lpips_oklch += loss_fn(b_img * 2.0 - 1.0, b_adv_rgb * 2.0 - 1.0).sum().item()
                 
         asr_oklch = (oklch_wins / num_images) * 100
         avg_lpips_oklch = lpips_oklch / num_images

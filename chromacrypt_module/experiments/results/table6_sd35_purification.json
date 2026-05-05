@@ -1,0 +1,41 @@
+{
+    "Total_Evaluated": 795,
+    "results": {
+        "Adversarial Patch": {
+            "Pre_ASR": 0.43522012578616354,
+            "Post_ASR": 0.9559748427672956,
+            "Rescued": 9,
+            "SNR_Survived": 423
+        },
+        "Narrowband Feature Mimicry": {
+            "Pre_ASR": 0.8301886792452831,
+            "Post_ASR": 0.9949685534591195,
+            "Rescued": 1,
+            "SNR_Survived": 132
+        },
+        "Luminance Grid": {
+            "Pre_ASR": 0.7358490566037736,
+            "Post_ASR": 0.9773584905660377,
+            "Rescued": 5,
+            "SNR_Survived": 197
+        },
+        "Luminance Grid (A=0.05)": {
+            "Pre_ASR": 0.12452830188679245,
+            "Post_ASR": 0.9484276729559749,
+            "Rescued": 1,
+            "SNR_Survived": 656
+        },
+        "Chromic Grid": {
+            "Pre_ASR": 0.8679245283018868,
+            "Post_ASR": 0.9924528301886792,
+            "Rescued": 2,
+            "SNR_Survived": 101
+        },
+        "Chromic Grid (A=0.05)": {
+            "Pre_ASR": 0.23773584905660378,
+            "Post_ASR": 0.9786163522012579,
+            "Rescued": 0,
+            "SNR_Survived": 589
+        }
+    }
+}

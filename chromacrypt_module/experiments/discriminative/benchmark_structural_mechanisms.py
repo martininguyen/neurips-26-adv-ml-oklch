@@ -23,7 +23,7 @@ def main():
     
     print(f"Initializing ChromaCrypt Structural Matrix (N={num_images}, eps={eps_s})...")
     model = models.resnet50(pretrained=True).eval().to(DEVICE)
-    loss_fn = lpips.LPIPS(net="alex").to(DEVICE)
+    loss_fn = lpips.LPIPS(net="vgg").to(DEVICE)
     color_ops = cc.DifferentiableColorOps().to(DEVICE)
     
     """
@@ -34,7 +34,7 @@ def main():
       2. TopologicalAttractor: Generates explicit generalized baseline structural perturbations mathematically mapping universal geometrical collapse modes.
     Purpose: Compares strictly defined boundary logic (Targeted high-frequency gradients vs canonical geometric constraints) natively separating visual phenomena vulnerabilities. 
     """
-    narrowband_atk = cc.NarrowbandMimicry(eps=eps_s, freq_mult=2.0)
+    narrowband_atk = cc.NarrowbandMimicry(eps=eps_s)
     topo_atk = cc.TopologicalAttractor(eps=eps_s)
     patch_atk = cc.AdvPatch(model=model, patch_size=config["purification"]["patch_size"])
     
@@ -58,21 +58,21 @@ def main():
         with torch.no_grad():
             preds_n = model((adv_n - mean) / std).argmax(1)
             narrow_wins += (preds_n != lbl_tensor).float().sum().item()
-            total_lpips_n += loss_fn(img_tensor, adv_n).sum().item()
+            total_lpips_n += loss_fn(img_tensor * 2.0 - 1.0, adv_n * 2.0 - 1.0).sum().item()
             
         # 2. Luminance Grid Pass
         adv_t = topo_atk(img_tensor, color_ops)
         with torch.no_grad():
             preds_t = model((adv_t - mean) / std).argmax(1)
             topo_wins += (preds_t != lbl_tensor).float().sum().item()
-            total_lpips_t += loss_fn(img_tensor, adv_t).sum().item()
+            total_lpips_t += loss_fn(img_tensor * 2.0 - 1.0, adv_t * 2.0 - 1.0).sum().item()
             
         # 3. Adversarial Patch Pass
         adv_p = patch_atk(img_tensor, labels=lbl_tensor)
         with torch.no_grad():
             preds_p = model((adv_p - mean) / std).argmax(1)
             patch_wins += (preds_p != lbl_tensor).float().sum().item()
-            total_lpips_p += loss_fn(img_tensor, adv_p).sum().item()
+            total_lpips_p += loss_fn(img_tensor * 2.0 - 1.0, adv_p * 2.0 - 1.0).sum().item()
         
         total_imgs += curr_batch_size
         print(f"  -> Processed {total_imgs}/{num_images} matrix boundaries")
@@ -94,7 +94,7 @@ def main():
     print(f"ASR: {asr_p:.1f}% | Metric LPIPS: {lpips_p:.3f}")
     
     print("\n" + "="*50)
-    print("LaTeX Table 9 Synthesis Ready (Copy / Paste Below):")
+    print("LaTeX Table [Structural Mechanisms] Synthesis Ready (Copy / Paste Below):")
     print("-" * 50)
     print(f"Structure & ASR & LPIPS \\\\")
     print(f"\\midrule")

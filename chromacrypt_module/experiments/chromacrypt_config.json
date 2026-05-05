@@ -1,7 +1,7 @@
 {
     "dataset": {
         "num_test_images": 1000,
-        "batch_size": 20
+        "batch_size": 50
     },
     "transferability": {
         "surrogate_model": "resnet50",
@@ -50,7 +50,7 @@
         "patch_size": 32
     },
     "evaluation": {
-        "lpips_backbone": "alex",
+        "lpips_backbone": "vgg",
         "target_model": "Salman2020Do_50_2",
         "target_model_short": "WideResNet50",
         "step_options": [
@@ -68,6 +68,7 @@
         "eps_autoattack_rgb": 0.01568627,
         "eps_oklch_l": 0.01,
         "eps_oklch_c": 0.01,
-        "eps_structural": 0.2
+        "eps_structural": 0.2,
+        "eps_chromic": 0.08
     }
 }

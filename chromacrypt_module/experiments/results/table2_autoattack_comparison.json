@@ -1,0 +1,18 @@
+{
+    "results": [
+        {
+            "model": "Liu2023Comprehensive_ConvNeXt-L",
+            "RGB_ASR": 38.7,
+            "RGB_LPIPS": 0.029440999388694763,
+            "OKLCH_ASR": 26.200000000000003,
+            "OKLCH_LPIPS": 0.008133243411779404
+        },
+        {
+            "model": "Xu2024MIMIR_Swin-L",
+            "RGB_ASR": 40.3,
+            "RGB_LPIPS": 0.030846099495887756,
+            "OKLCH_ASR": 27.1,
+            "OKLCH_LPIPS": 0.009273871421813965
+        }
+    ]
+}

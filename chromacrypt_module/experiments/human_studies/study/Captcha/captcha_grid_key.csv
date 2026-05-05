@@ -1,0 +1,11 @@
+grid_id,prompt,target_cells,grid_filename
+G-01,Select all animals,0 2 5 6 8,captcha_grid_G-01_animal.png
+G-02,Select all vehicles,0 1 2 4,captcha_grid_G-02_vehicle.png
+G-03,Select all foods,5 6 7,captcha_grid_G-03_food.png
+G-04,Select all animals,1 2 6,captcha_grid_G-04_animal.png
+G-05,Select all vehicles,2 3 4 6 7,captcha_grid_G-05_vehicle.png
+G-06,Select all foods,0 2 3 4 7,captcha_grid_G-06_food.png
+G-07,Select all animals,3 6 8,captcha_grid_G-07_animal.png
+G-08,Select all vehicles,0 1 3,captcha_grid_G-08_vehicle.png
+G-09,Select all foods,1 2 5 8,captcha_grid_G-09_food.png
+G-10,Select all animals,1 2 4 7 8,captcha_grid_G-10_animal.png

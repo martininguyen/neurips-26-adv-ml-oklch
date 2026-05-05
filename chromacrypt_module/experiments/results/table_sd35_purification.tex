@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Stable Diffusion 3.5 Latent Projection Vulnerability ($N=795$). Evaluating the purification efficacy of flow-matching architecture against structural geometries across varying amplitudes.}
+\label{tab:sd35_purification_matrix}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Attack Generator} & \textbf{Pre-Purification ASR} & \textbf{Post-Purification ASR} & \textbf{Rescued Images $\uparrow$} & \textbf{Induced Misclassifications $\downarrow$} \\ \midrule
+Adversarial Patch & 43.5\% & 95.6\% & 9 & 423 \\
+Narrowband Feature Mimicry & 83.0\% & 99.5\% & 1 & 132 \\
+Luminance Grid & 73.6\% & 97.7\% & 5 & 197 \\
+Luminance Grid (A=0.05) & 12.5\% & 94.8\% & 1 & 656 \\
+Chromic Grid & 86.8\% & 99.2\% & 2 & 101 \\
+Chromic Grid (A=0.05) & 23.8\% & 97.9\% & 0 & 589 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

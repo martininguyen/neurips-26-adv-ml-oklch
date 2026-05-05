@@ -59,7 +59,7 @@ def generate_structural_chart():
     print(f"Synthesized Structural Mechanics Matrix -> {out_path}")
 
 def generate_sd35_purification_chart():
-    json_path = os.path.join(RESULTS_DIR, "table13_sd35_purification.json")
+    json_path = os.path.join(RESULTS_DIR, "table6_sd35_purification.json")
     if not os.path.exists(json_path):
         print(f"Skipping SD3.5 Purification Graph (Missing logic file: {json_path})")
         return
@@ -298,6 +298,50 @@ def generate_structured_baselines():
     plt.savefig(out_path, dpi=300, bbox_inches='tight')
     plt.close()
 
+def generate_rgb_vs_oklch_grid_proof():
+    print("Generating RGB vs OKLCH Grid Overload Matrix...")
+    color_ops = cc.DifferentiableColorOps().to(DEVICE)
+    try:
+        images, labels, _, _ = core_utils.load_imagenet_val_batch(n_examples=1, offset=14)
+    except Exception:
+        return
+        
+    img_tensor = images.to(DEVICE)
+    img_oklch = color_ops.rgb_to_oklch(img_tensor)
+    
+    L = img_oklch[:, 0:1, :, :]
+    C = img_oklch[:, 1:2, :, :]
+    H = img_oklch[:, 2:3, :, :]
+    
+    grid = attacks.generate_topological_grid(img_tensor.shape[2], img_tensor.shape[3], DEVICE)
+    
+    L_adv = (L + 0.3 * grid).clamp(0, 1)
+    C_adv = (C + 0.3 * 0.4 * grid).clamp(0, 0.4)
+    adv_oklch = torch.cat([L_adv, C_adv, H], dim=1)
+    adv_oklch_rgb = color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch, steps=12)).clamp(0, 1)
+
+    grid_rgb = grid.expand(-1, 3, -1, -1)
+    adv_rgb_grid = (img_tensor + 0.3 * grid_rgb).clamp(0, 1)
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    plots = [
+        (img_tensor, "Clean Reference"),
+        (adv_rgb_grid, "RGB Grid (Gamut Clipping Failure)"),
+        (adv_oklch_rgb, "OKLCH Grid (Structural Preservation)")
+    ]
+    
+    for i, (p_img, title) in enumerate(plots):
+        axes[i].imshow(p_img.squeeze().detach().permute(1, 2, 0).cpu().numpy())
+        axes[i].set_title(title, fontweight='bold', pad=15)
+        axes[i].axis('off')
+
+    out_path = os.path.join(OUTPUT_DIR, "proof_rgb_vs_oklch_grid.png")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Synthesized RGB vs OKLCH saturation matrix -> {out_path}")
+
+
 def main():
     print("Initializing Formal Document Graphics Synthesizer...")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -308,6 +352,7 @@ def main():
     generate_channel_ablation()
     generate_purification_matrix()
     generate_structured_baselines()
+    generate_rgb_vs_oklch_grid_proof()
     print("Execution Graph Concluded Natively.")
 
 if __name__ == "__main__":

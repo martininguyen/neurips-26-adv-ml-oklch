@@ -1,0 +1,17 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{Continuous Perceptual Noise Ablation ($N=1{,}000$). Tracking the Attack Success Rate (ASR) against ConvNeXt-L across a dynamically sweeping perceptual footprint (LPIPS) for both random RGB noise and the structural Chromic Grid.}
+\label{tab:random_noise_baserate}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Calibrated LPIPS} & \textbf{Random Noise ASR} & \textbf{Chromic Grid ASR} & \textbf{$\Delta$ Gap} \\ \midrule
+0.20 & 2.1\% & \textbf{4.4\%} & +2.3\% \\
+0.40 & 6.6\% & \textbf{36.9\%} & +30.3\% \\
+0.60 & 22.8\% & \textbf{97.7\%} & +74.9\% \\
+0.80 & 84.7\% & \textbf{99.9\%} & +15.2\% \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

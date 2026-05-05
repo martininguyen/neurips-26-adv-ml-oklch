@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\caption{White-Box Channel Ablation (PGD). Efficacy mapped by isolating gradient steps to specific OKLCH axes.}
+\label{tab:channel_ablation}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+\textbf{Optimization Axes} & \textbf{LPIPS} & \textbf{ResNet50} & \textbf{EfficientNet} & \textbf{ViT-B-16} & \textbf{VGG16} & \textbf{Mean ASR} \\ \midrule
+RGB-PGD Baseline & 0.1953 & 99.9\% & 100.0\% & 100.0\% & 100.0\% & \textbf{100.0\%} \\
+OKLCH ($L+C+H$) & 0.1087 & 99.9\% & 100.0\% & 99.8\% & 99.9\% & \textbf{99.9\%} \\
+OKLCH ($L+C$) [Freeze $H$] & 0.1042 & 99.8\% & 100.0\% & 99.6\% & 99.9\% & \textbf{99.8\%} \\
+OKLCH ($C+H$) [Freeze $L$] & 0.0361 & 97.8\% & 97.8\% & 96.1\% & 99.7\% & \textbf{98.3\%} \\
+OKLCH ($L$) [Freeze $C+H$] & 0.0784 & 98.6\% & 99.8\% & 96.5\% & 99.9\% & \textbf{98.9\%} \\
+OKLCH ($C$) [Freeze $L+H$] & 0.0308 & 96.0\% & 96.4\% & 92.6\% & 99.6\% & \textbf{96.9\%} \\
+OKLCH ($H$) [Freeze $L+C$] & 0.0059 & 64.6\% & 60.7\% & 58.2\% & 78.4\% & \textbf{69.0\%} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

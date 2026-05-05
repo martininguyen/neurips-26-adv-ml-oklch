@@ -19,7 +19,7 @@ import json
 import numpy as np
 import torchvision.transforms as transforms
 from PIL import Image
-from diffusers import AutoencoderKL
+from diffusers import StableDiffusionImg2ImgPipeline
 
 from types import ModuleType
 try:
@@ -110,12 +110,17 @@ def match_lpips_random_noise(img_tensor, clean_tensor, target_lpips, loss_fn_vgg
         
     return best_adv, current_lpips, best_eps
 
-def purify_tensor(img_tensor, vae, device):
-    with torch.no_grad():
-        x = (img_tensor * 2.0 - 1.0).to(vae.dtype) # Scale to [-1, 1] for VAE natively
-        latents = vae.encode(x).latent_dist.sample()
-        decoded = vae.decode(latents).sample
-        return ((decoded + 1.0) / 2.0).clamp(0, 1).to(img_tensor.dtype)
+def purify_tensor(img_tensor, pipeline, device):
+    """Autoencoder Purification via SD SDE Denoising Pipeline"""
+    results_tensors = []
+    to_pil = transforms.ToPILImage()
+    to_tensor = transforms.ToTensor()
+    for i in range(img_tensor.shape[0]):
+        img = to_pil(img_tensor[i].cpu())
+        with torch.no_grad():
+            purified_img = pipeline(prompt="", image=img, strength=0.35, guidance_scale=0.0).images[0]
+        results_tensors.append(to_tensor(purified_img).to(device))
+    return torch.stack(results_tensors)
 
 def main():
     print(f"Running Random Noise Base-rate Test on {DEVICE}")
@@ -132,15 +137,27 @@ def main():
     except Exception as e:
         print(f"Model ID '{model_name}' missing from robustbench index or failed to load: {e}\nAborting.")
         return
-    # Load VAE
-    vae_id = SETTINGS["purification"]["sd15_vae_model_id"]
-    print(f"Loading Purifier VAE: {vae_id}...")
+    # Load SDE
+    print(f"Loading Purifier SDE Flow-Matching Pipeline...")
     core_utils.load_env()
     hf_token = os.environ.get("HUGGINGFACE_ACCESS_TOKEN")
     try:
-        vae = AutoencoderKL.from_pretrained(vae_id, torch_dtype=torch.float16, token=hf_token).to(DEVICE).eval()
+        pipeline = StableDiffusionImg2ImgPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5", 
+            torch_dtype=torch.float32, 
+            token=hf_token,
+            safety_checker=None,
+            requires_safety_checker=False
+        ).to(DEVICE)
     except Exception:
-        vae = AutoencoderKL.from_pretrained(vae_id, torch_dtype=torch.float16, local_files_only=True).to(DEVICE).eval()
+        pipeline = StableDiffusionImg2ImgPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5", 
+            torch_dtype=torch.float32, 
+            local_files_only=True,
+            safety_checker=None,
+            requires_safety_checker=False
+        ).to(DEVICE)
+    pipeline.set_progress_bar_config(disable=True)
     
     mean = torch.tensor([0.485, 0.456, 0.406]).view(1,3,1,1).to(DEVICE)
     std = torch.tensor([0.229, 0.224, 0.225]).view(1,3,1,1).to(DEVICE)
@@ -197,7 +214,7 @@ def main():
             if pred_grid == pred_clean: stats["Luminance_Grid"]["acc"] += 1
             stats["Luminance_Grid"]["lpips"] += lpips_grid
             
-            p_grid = purify_tensor(adv_grid, vae, DEVICE)
+            p_grid = purify_tensor(adv_grid, pipeline, DEVICE)
             if model(normalize(p_grid)).argmax(dim=1).item() == pred_clean:
                 stats["Luminance_Grid"]["acc_purified"] += 1
             
@@ -213,7 +230,7 @@ def main():
             stats["Random_RGB"]["lpips"] += lpips_rgb
             stats["Random_RGB"]["eps"] += eps_rgb
             
-            p_rgb = purify_tensor(adv_rgb, vae, DEVICE)
+            p_rgb = purify_tensor(adv_rgb, pipeline, DEVICE)
             if model(normalize(p_rgb)).argmax(dim=1).item() == pred_clean:
                 stats["Random_RGB"]["acc_purified"] += 1
             
@@ -229,7 +246,7 @@ def main():
             stats["Random_L"]["lpips"] += lpips_L
             stats["Random_L"]["eps"] += eps_L
             
-            p_L = purify_tensor(adv_L, vae, DEVICE)
+            p_L = purify_tensor(adv_L, pipeline, DEVICE)
             if model(normalize(p_L)).argmax(dim=1).item() == pred_clean:
                 stats["Random_L"]["acc_purified"] += 1
             

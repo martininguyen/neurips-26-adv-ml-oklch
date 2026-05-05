@@ -1,0 +1,20 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Black-Box Transferability matrix targeting surrogate gradients from ResNet50. Transfer success metrics identify that standard uncharacterized iterative perturbations fundamentally fail to generalize to Vision Transformers.}
+\label{tab:transferability_matrix}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+\textbf{Optimization Axes} & \textbf{LPIPS} & \textbf{AlexNet} & \textbf{VGG16} & \textbf{MobileNet} & \textbf{EfficientNet} & \textbf{ViT-B-16} & \textbf{Mean ASR} \\ \midrule
+RGB-PGD Baseline & 0.1797 & 11.5\% & 24.7\% & 17.7\% & 14.3\% & 4.6\% & \textbf{14.6\%} \\
+OKLCH ($L+C+H$) & 0.0988 & 6.7\% & 12.1\% & 9.5\% & 8.6\% & 1.6\% & \textbf{7.7\%} \\
+OKLCH ($L+C$) [Freeze $H$] & 0.0948 & 6.0\% & 12.4\% & 9.5\% & 7.9\% & 2.2\% & \textbf{7.6\%} \\
+OKLCH ($C+H$) [Freeze $L$] & 0.0321 & 3.3\% & 5.2\% & 3.8\% & 2.9\% & 0.7\% & \textbf{3.2\%} \\
+OKLCH ($L$) [Freeze $C+H$] & 0.0725 & 4.7\% & 9.8\% & 8.4\% & 6.8\% & 1.2\% & \textbf{6.2\%} \\
+OKLCH ($C$) [Freeze $L+H$] & 0.0276 & 3.5\% & 4.5\% & 3.4\% & 2.6\% & 0.8\% & \textbf{3.0\%} \\
+OKLCH ($H$) [Freeze $L+C$] & 0.0050 & 0.5\% & 1.3\% & 1.1\% & 1.1\% & 0.4\% & \textbf{0.9\%} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

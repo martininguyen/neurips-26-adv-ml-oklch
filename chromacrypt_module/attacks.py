@@ -110,44 +110,56 @@ class RGBPGD:
         return adv_images
 
 class NarrowbandMimicry:
-    def __init__(self, eps=0.2, freq_mult=2.0, bw=2.0):
+    def __init__(self, eps=0.2, freq_mult=1.0, bw=2.0, channel="LC"):
         self.eps = eps
         self.freq_mult = freq_mult
         self.bw = bw
+        self.channel = channel
 
     def __call__(self, images, color_ops):
         b, c, h, w = images.shape
         device = images.device
-        noise = generate_narrowband_noise(h, w, device, self.freq_mult, self.bw)
+        noise = generate_narrowband_noise(b, h, w, device, self.freq_mult, self.bw)
         
         img_oklch = color_ops.rgb_to_oklch(images)
         L = img_oklch[:, 0:1, :, :]
+        C = img_oklch[:, 1:2, :, :]
+        H = img_oklch[:, 2:3, :, :]
         
-        L_adv = (L + self.eps * noise).clamp(0, 1)
-        adv_oklch = torch.cat([L_adv, img_oklch[:, 1:2, :, :], img_oklch[:, 2:3, :, :]], dim=1)
+        L_adv, C_adv = L, C
+        if "L" in self.channel:
+            L_adv = (L + self.eps * noise).clamp(0, 1)
+        if "C" in self.channel:
+            C_adv = torch.abs(C + self.eps * noise).clamp(0, 0.4)
+            
+        adv_oklch = torch.cat([L_adv, C_adv, H], dim=1)
         
         return color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch, steps=12)).clamp(0, 1).detach()
 
 
 class TopologicalAttractor:
-    def __init__(self, eps=0.2):
+    def __init__(self, eps=0.2, channel="LC"):
         self.eps = eps
+        self.channel = channel
 
     def __call__(self, images, color_ops):
         b, c, h, w = images.shape
         device = images.device
         
-        grid_L = generate_topological_grid(h, w, device)
-        grid_C = grid_L  # Identical spatial geometry
+        grid = generate_topological_grid(h, w, device)
         
         img_oklch = color_ops.rgb_to_oklch(images)
         L = img_oklch[:, 0:1, :, :]
         C = img_oklch[:, 1:2, :, :]
+        H = img_oklch[:, 2:3, :, :]
         
-        L_adv = (L + self.eps * grid_L).clamp(0, 1)
-        C_adv = (C + self.eps * 0.4 * grid_C).clamp(0, 0.4)
-        
-        adv_oklch = torch.cat([L_adv, C_adv, img_oklch[:, 2:3, :, :]], dim=1)
+        L_adv, C_adv = L, C
+        if "L" in self.channel:
+            L_adv = (L + self.eps * grid).clamp(0, 1)
+        if "C" in self.channel:
+            C_adv = torch.abs(C + self.eps * grid).clamp(0, 0.4)
+            
+        adv_oklch = torch.cat([L_adv, C_adv, H], dim=1)
         
         return color_ops.oklch_to_rgb(color_ops.gamut_clip_preserve_hue(adv_oklch, steps=12)).clamp(0, 1).detach()
 class AdvPatch:
@@ -212,11 +224,12 @@ def generate_topological_grid(h, w, device):
     """Canonical DCT-aligned checkerboard grid (Chromic Interference)"""
     x = torch.arange(w, device=device, dtype=torch.float32).view(1, 1, 1, w)
     y = torch.arange(h, device=device, dtype=torch.float32).view(1, 1, h, 1)
-    return torch.cos(x / 2.0) * torch.cos(y / 2.0)
+    # Changed to pi/8.0 to satisfy the SD VAE Nyquist limit (8x downsampling)
+    return torch.cos(x * np.pi / 8.0) * torch.cos(y * np.pi / 8.0)
 
-def generate_narrowband_noise(h, w, device, freq_mult=2.0, bw=2.0):
+def generate_narrowband_noise(b, h, w, device, freq_mult=1.0, bw=2.0):
     """Canonical Narrowband Noise (for Mimicry analysis)"""
-    base_freq = 224.0 / (4 * np.pi) 
+    base_freq = 224.0 / 16.0 
     target_k = base_freq * freq_mult
     
     fx = torch.fft.fftfreq(w, d=1.0).to(device) * w
@@ -225,20 +238,17 @@ def generate_narrowband_noise(h, w, device, freq_mult=2.0, bw=2.0):
     
     sigma = bw * freq_mult
     
-    dist1 = (FX - target_k)**2 + (FY - target_k)**2
-    dist2 = (FX + target_k)**2 + (FY + target_k)**2
-    dist3 = (FX - target_k)**2 + (FY + target_k)**2
-    dist4 = (FX + target_k)**2 + (FY - target_k)**2
-    
-    mask = torch.exp(-dist1/(2*sigma**2)) + \
-           torch.exp(-dist2/(2*sigma**2)) + \
-           torch.exp(-dist3/(2*sigma**2)) + \
-           torch.exp(-dist4/(2*sigma**2))
+    rad_dist = torch.sqrt(FX**2 + FY**2)
+    mask = torch.exp(-((rad_dist - target_k)**2) / (2 * sigma**2))
            
+    mask = mask.unsqueeze(0).expand(b, h, w)
     real_noise = torch.randn_like(mask)
     imag_noise = torch.randn_like(mask)
     filtered_f = (real_noise + 1j * imag_noise) * mask
     grid_noise = torch.fft.ifft2(filtered_f).real
     
-    grid_noise = grid_noise / (grid_noise.std() + 1e-8) * 0.707
-    return grid_noise.view(1, 1, h, w)
+    grid_noise_flat = grid_noise.view(b, -1)
+    std_vals = grid_noise_flat.std(dim=1, keepdim=True) + 1e-8
+    grid_noise_flat = (grid_noise_flat / std_vals) * 0.707
+    
+    return grid_noise_flat.view(b, 1, h, w)

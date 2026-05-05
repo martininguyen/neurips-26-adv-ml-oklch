@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Structural Trap Benchmark Diagnostic ($N=1{,}000$). Evaluating the attack success rate of the Chromic Grid structural harmonic against baseline and robust models.}
+\label{tab:full_benchmark}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Target Model} & \textbf{Clean Acc} & \textbf{Narrowband Feature Mimicry} & \textbf{Luminance Grid} & \textbf{Chromic Interference} \\ \midrule
+ResNet50-Standard & 79.5\% & 82.6\% & 73.6\% & \textbf{86.8\%} \\
+Salman2020-ResNet50 & 64.1\% & 93.8\% & 78.9\% & \textbf{91.0\%} \\
+Salman2020-WRN50-2 & 68.2\% & 93.3\% & 77.9\% & \textbf{90.0\%} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

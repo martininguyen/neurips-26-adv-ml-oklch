@@ -1,0 +1,23 @@
+{
+    "resnet50": {
+        "Clean_Accuracy": 0.795,
+        "Adv_Patch_ASR": 0.4327044025157233,
+        "Narrowband_ASR": 0.8264150943396227,
+        "Grid_Harmonic_ASR": 0.8679245283018868,
+        "Avg_LPIPS_Footprint": 0.5379522830247879
+    },
+    "Salman2020Do_R50": {
+        "Clean_Accuracy": 0.641,
+        "Adv_Patch_ASR": 0.35101404056162244,
+        "Narrowband_ASR": 0.9375975039001561,
+        "Grid_Harmonic_ASR": 0.9095163806552262,
+        "Avg_LPIPS_Footprint": 0.5379522830247879
+    },
+    "Salman2020Do_50_2": {
+        "Clean_Accuracy": 0.682,
+        "Adv_Patch_ASR": 0.3035190615835777,
+        "Narrowband_ASR": 0.9325513196480938,
+        "Grid_Harmonic_ASR": 0.9002932551319648,
+        "Avg_LPIPS_Footprint": 0.5379522830247879
+    }
+}
