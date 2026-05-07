@@ -130,7 +130,7 @@ class NarrowbandMimicry:
         if "L" in self.channel:
             L_adv = (L + self.eps * noise).clamp(0, 1)
         if "C" in self.channel:
-            C_adv = torch.abs(C + self.eps * noise).clamp(0, 0.4)
+            C_adv = (C + self.eps * noise).clamp(0.0, 0.4)
             
         adv_oklch = torch.cat([L_adv, C_adv, H], dim=1)
         
@@ -157,7 +157,7 @@ class TopologicalAttractor:
         if "L" in self.channel:
             L_adv = (L + self.eps * grid).clamp(0, 1)
         if "C" in self.channel:
-            C_adv = torch.abs(C + self.eps * grid).clamp(0, 0.4)
+            C_adv = (C + self.eps * grid).clamp(0.0, 0.4)
             
         adv_oklch = torch.cat([L_adv, C_adv, H], dim=1)
         
@@ -229,7 +229,7 @@ def generate_topological_grid(h, w, device):
 
 def generate_narrowband_noise(b, h, w, device, freq_mult=1.0, bw=2.0):
     """Canonical Narrowband Noise (for Mimicry analysis)"""
-    base_freq = 224.0 / 16.0 
+    base_freq = h / 16.0 
     target_k = base_freq * freq_mult
     
     fx = torch.fft.fftfreq(w, d=1.0).to(device) * w

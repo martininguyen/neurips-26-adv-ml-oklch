@@ -274,12 +274,15 @@ def main():
                 
             fails = 0
             for b_idx in range(0, len(images), batch_size):
+                sys.stdout.write(f"\r      -> Batch [{b_idx//batch_size + 1}/{(len(images)+batch_size-1)//batch_size}] (processing...)")
+                sys.stdout.flush()
                 b_img = images[b_idx:b_idx+batch_size].to(DEVICE)
                 b_lbl = labels[b_idx:b_idx+batch_size].to(DEVICE)
                 succ, adv_out = pga_channel_ablation(b_img, b_lbl, model, color_ops, fL, fC, fH, steps=config["ablation"]["pgd_steps"], is_rgb=is_rgb)
                 fails += succ.sum().item()
                 if m_name == t5_models[0]:  # Only compile LPIPS once per geometric trace
                     with torch.no_grad(): total_lpips += loss_fn_lpips(b_img * 2 - 1, adv_out * 2 - 1).mean().item() * b_img.size(0)
+            print() # newline after batch loop finishes
                         
             name_map = {
                 "resnet50": "ResNet50",

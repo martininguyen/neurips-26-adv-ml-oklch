@@ -85,6 +85,10 @@ def main():
         c_images = c_images.to(DEVICE)
         labels = labels.to(DEVICE)
         
+        # FIX: Upsample to 512x512 to prevent SD3.5 RoPE OOD Collapse
+        c_images = torch.nn.functional.interpolate(c_images, size=(512, 512), mode='bilinear', align_corners=False)
+        scaled_patch_size = int(patch_size * (512.0 / 224.0))
+        
         clean_correct_mask, _ = evaluate_batch_accuracy(model, normalize_fn, c_images, labels)
         valid_indices = torch.where(clean_correct_mask)[0]
         if len(valid_indices) == 0:
@@ -92,7 +96,7 @@ def main():
             
         total_images += len(valid_indices)
         
-        patch_atk = cc.AdvPatch(model=model, patch_size=patch_size)
+        patch_atk = cc.AdvPatch(model=model, patch_size=scaled_patch_size)
         narrow_atk = cc.NarrowbandMimicry(eps=chromic_amp)
         grid_atk = cc.TopologicalAttractor(eps=chromic_amp, channel="L")
         grid_low_atk = cc.TopologicalAttractor(eps=0.05, channel="L")

@@ -13,7 +13,7 @@ pip uninstall -y flash-attn xformers
 
 echo "[x] Mapping Python library dependencies natively..."
 pip install --upgrade torch torchvision torchaudio
-pip install timm "git+https://github.com/RobustBench/robustbench" diffusers accelerate opencv-python-headless lpips pillow transformers sentencepiece protobuf torchattacks scikit-image matplotlib
+pip install timm "git+https://github.com/RobustBench/robustbench" diffusers==0.31.0 accelerate opencv-python-headless lpips pillow transformers==4.45.2 sentencepiece protobuf torchattacks scikit-image matplotlib
 echo "[x] Verifying ImageNet payload availability..."
 if [ -d "../data/imagenet-1k" ]; then
     echo "  -> Found ../data/imagenet-1k. Validation integrity checks passed."
