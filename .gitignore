@@ -4,6 +4,11 @@
 !whitepaper_v1.5_submissions/
 !.gitignore
 
+# Ignore secret/credential files
+.env
+*.env
+**/.env
+
 # Ignore Virtual Environments and Dependencies
 venv_win/
 venv/
