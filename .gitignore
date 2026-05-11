@@ -1,7 +1,6 @@
 # Restrict entire repository to essential production folders
 /*
 !chromacrypt_module/
-!whitepaper_v1.5_submissions/
 !.gitignore
 
 # Ignore secret/credential files
