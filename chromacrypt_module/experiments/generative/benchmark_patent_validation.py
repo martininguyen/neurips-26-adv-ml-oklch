@@ -65,7 +65,8 @@ def generate_cpm_wave(h, w, payload_bits, device, auth_id="FairFate_2026"):
     primary_wave = torch.cos(x * np.pi / 32.0 + phase_tensor) * torch.cos(y * np.pi / 32.0)
     
     # Scale invariance anchor lambda=128 (freq = pi/64) with amplitude tapering (10%)
-    aux_wave = torch.cos(x * np.pi / 64.0 + phase_tensor) * torch.cos(y * np.pi / 64.0)
+    # This anchor is intentionally unmodulated to provide a pure spectral peak for FFT scale recovery.
+    aux_wave = torch.cos(x * np.pi / 64.0) * torch.cos(y * np.pi / 64.0)
     
     composite_wave = primary_wave + 0.1 * aux_wave
     return composite_wave
